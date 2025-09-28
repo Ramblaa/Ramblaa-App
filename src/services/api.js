@@ -384,14 +384,15 @@ class ApiService {
     });
   }
 
-  async sendSandboxMessage(sessionId, message, senderType, senderName) {
+  async sendSandboxMessage(sessionId, message, senderType, senderName, autoResponse = true) {
     return this.request('/sandbox/message', {
       method: 'POST',
       body: JSON.stringify({
         session_id: sessionId,
         message: message,
         sender_type: senderType,
-        sender_name: senderName
+        sender_name: senderName,
+        auto_response: autoResponse
       }),
     });
   }

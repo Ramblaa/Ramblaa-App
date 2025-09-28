@@ -289,6 +289,8 @@ router.post('/message', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('[Sandbox Message] Validation failed:', errors.array());
+      console.log('[Sandbox Message] Request body:', req.body);
       return res.status(400).json({
         error: 'Validation failed',
         details: errors.array()
@@ -349,13 +351,54 @@ router.post('/message', [
       { sender_type, sender_name }
     ]);
 
+    // Check if this is a guest message and auto-response should be triggered
+    const shouldAutoRespond = sender_type === 'guest' && req.body.auto_response === true;
+
+    console.log(`[Sandbox Message] Message sent:`, {
+      session_id,
+      sender_type,
+      auto_response: req.body.auto_response,
+      shouldAutoRespond
+    });
+
+    let aiResponse = null;
+    if (shouldAutoRespond) {
+      try {
+        console.log(`[Sandbox] Triggering AI auto-response for guest message in session ${session_id}`);
+
+        // Trigger AI processing asynchronously to avoid blocking the response
+        setImmediate(async () => {
+          try {
+            console.log(`[Sandbox] Starting AI automation for session ${session_id}`);
+            await sandboxAIService.runFullAutomation(session_id, accountId);
+            console.log(`[Sandbox] AI processing completed for session ${session_id}`);
+          } catch (error) {
+            console.error(`[Sandbox] AI processing failed for session ${session_id}:`, error);
+          }
+        });
+
+        aiResponse = { triggered: true, message: 'AI response processing initiated' };
+      } catch (error) {
+        console.error('Error triggering AI response:', error);
+        aiResponse = { triggered: false, error: error.message };
+      }
+    } else {
+      console.log(`[Sandbox] AI auto-response NOT triggered for session ${session_id}:`, {
+        sender_type,
+        auto_response: req.body.auto_response,
+        isGuest: sender_type === 'guest',
+        autoResponseEnabled: req.body.auto_response === true
+      });
+    }
+
     res.status(201).json({
       success: true,
       data: {
         message_uuid: messageUuid,
         message,
         sender_type,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ai_response: aiResponse
       }
     });
 

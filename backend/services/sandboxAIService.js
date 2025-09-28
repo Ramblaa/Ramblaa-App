@@ -24,19 +24,29 @@ class SandboxAIService {
 
     try {
       // 1. Process and summarize new messages
+      console.log('[SandboxAI] Step 1: Processing and summarizing messages...');
       const summaries = await this.processSummarizeMessages(sessionId, accountId);
+      console.log(`[SandboxAI] Step 1 completed: Found ${summaries.length} summaries`);
 
       // 2. Generate AI responses based on summaries
+      console.log('[SandboxAI] Step 2: Building AI responses from summaries...');
       const responses = await this.buildAiResponseFromSummaries(sessionId, summaries);
+      console.log(`[SandboxAI] Step 2 completed: Generated ${responses.length} responses`);
 
       // 3. Create tasks if needed
+      console.log('[SandboxAI] Step 3: Creating staff tasks...');
       const tasks = await this.createStaffTasks(sessionId, summaries);
+      console.log(`[SandboxAI] Step 3 completed: Created ${tasks.length} tasks`);
 
       // 4. Evaluate task status and generate follow-ups
+      console.log('[SandboxAI] Step 4: Evaluating task status...');
       const followUps = await this.evaluateTaskStatus(sessionId);
+      console.log(`[SandboxAI] Step 4 completed: Generated ${followUps.length} follow-ups`);
 
       // 5. Process any escalations
+      console.log('[SandboxAI] Step 5: Processing escalations...');
       const escalations = await this.processHostEscalations(sessionId, summaries);
+      console.log(`[SandboxAI] Step 5 completed: Processed ${escalations.length} escalations`);
 
       return {
         summaries,
@@ -271,16 +281,30 @@ Please provide a JSON response with:
    * Generate AI responses based on message summaries
    */
   async buildAiResponseFromSummaries(sessionId, summaries) {
+    console.log(`[SandboxAI] buildAiResponseFromSummaries: Processing ${summaries.length} summaries`);
     const client = await pool.connect();
     const responses = [];
 
     try {
-      for (const summary of summaries) {
+      for (const [index, summary] of summaries.entries()) {
+        console.log(`[SandboxAI] Processing summary ${index + 1}/${summaries.length}:`, {
+          actionRequired: summary.summary.actionRequired,
+          category: summary.summary.category,
+          priority: summary.summary.priority
+        });
+
         // Skip if no action required
-        if (!summary.summary.actionRequired) continue;
+        if (!summary.summary.actionRequired) {
+          console.log(`[SandboxAI] Skipping summary ${index + 1}: No action required`);
+          continue;
+        }
+
+        console.log(`[SandboxAI] Processing summary ${index + 1}: Action required, getting property data...`);
 
         // Get property FAQs and templates
         const propertyData = await this.getPropertyData(sessionId, client);
+
+        console.log(`[SandboxAI] Processing summary ${index + 1}: Generating AI response...`);
 
         // Generate appropriate response
         const response = await this.generateAiResponse(summary, propertyData);
@@ -348,7 +372,10 @@ Please provide a JSON response with:
       SELECT
         ss.scenario_data,
         p.*,
-        array_agg(DISTINCT f.*) as faqs
+        COALESCE(
+          array_agg(DISTINCT f.*) FILTER (WHERE f.id IS NOT NULL),
+          ARRAY[]::faqs[]
+        ) as faqs
       FROM sandbox_sessions ss
       LEFT JOIN properties p ON (ss.scenario_data->>'property_id')::INTEGER = p.id
       LEFT JOIN faqs f ON f.property_id = p.id
@@ -357,17 +384,113 @@ Please provide a JSON response with:
     `;
 
     const result = await client.query(query, [sessionId]);
-    return result.rows[0] || {};
+    const data = result.rows[0] || {};
+
+    // Ensure faqs is always an array
+    if (!Array.isArray(data.faqs)) {
+      data.faqs = [];
+    }
+
+    // Debug logging to see what property data we have
+    console.log('[SandboxAI] Property data retrieved:', {
+      propertyId: data.id,
+      propertyTitle: data.property_title,
+      columns: Object.keys(data).filter(key => key.startsWith('wifi') || key.includes('password') || key.includes('WiFi'))
+    });
+
+    return data;
+  }
+
+  /**
+   * Build comprehensive property information string from all available data
+   */
+  buildComprehensivePropertyInfo(propertyData) {
+    if (!propertyData || !propertyData.id) {
+      return 'Property Information: Not available';
+    }
+
+    // Core property fields mapping
+    const fieldMappings = {
+      'Property Name': propertyData.property_title || propertyData.name,
+      'Address': propertyData.property_location || propertyData.address,
+      'Check-in Time': propertyData.check_in_time,
+      'Check-out Time': propertyData.check_out_time,
+      'WiFi Network': propertyData.wifi_network_name,
+      'WiFi Password': propertyData.wifi_password,
+      'Number of Bedrooms': propertyData.bedrooms,
+      'Number of Bathrooms': propertyData.bathrooms,
+      'Max Guests': propertyData.max_guests,
+      'Property Type': propertyData.property_type,
+      'Description': propertyData.description,
+      'House Rules': propertyData.house_rules,
+      'Amenities': propertyData.amenities,
+      'Parking Information': propertyData.parking_info,
+      'Emergency Contact': propertyData.emergency_contact,
+      'Host Phone': propertyData.host_phone,
+      'Host Email': propertyData.host_email,
+      'Local Area Information': propertyData.local_area_info,
+      'Transportation': propertyData.transportation_info,
+      'Nearby Attractions': propertyData.nearby_attractions,
+      'Restaurant Recommendations': propertyData.restaurant_recommendations,
+      'Grocery Stores': propertyData.grocery_stores,
+      'Medical Facilities': propertyData.medical_facilities,
+      'Pet Policy': propertyData.pet_policy,
+      'Smoking Policy': propertyData.smoking_policy,
+      'Noise Policy': propertyData.noise_policy,
+      'Party Policy': propertyData.party_policy,
+      'Additional Instructions': propertyData.additional_instructions,
+      'Cleaning Instructions': propertyData.cleaning_instructions,
+      'Appliance Instructions': propertyData.appliance_instructions,
+      'Heating/Cooling': propertyData.hvac_instructions,
+      'Security System': propertyData.security_system_info,
+      'Key/Access Information': propertyData.key_access_info
+    };
+
+    // Filter out empty/null values and build property info string
+    const propertyLines = [];
+    propertyLines.push('Property Information:');
+
+    Object.entries(fieldMappings).forEach(([label, value]) => {
+      if (value && String(value).trim() && String(value).trim() !== 'null') {
+        propertyLines.push(`- ${label}: ${value}`);
+      }
+    });
+
+    // Also include any additional data that might be stored in other columns
+    const excludeKeys = ['id', 'account_id', 'created_at', 'updated_at', 'is_active', 'faqs', 'scenario_data'];
+    Object.keys(propertyData).forEach(key => {
+      if (!excludeKeys.includes(key) && !Object.values(fieldMappings).includes(propertyData[key])) {
+        const value = propertyData[key];
+        if (value && String(value).trim() && String(value).trim() !== 'null') {
+          const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          propertyLines.push(`- ${label}: ${value}`);
+        }
+      }
+    });
+
+    return propertyLines.join('\n');
   }
 
   /**
    * Generate AI response to guest
    */
   async generateAiResponse(summary, propertyData) {
+    console.log('[SandboxAI] Generating AI response for summary:', JSON.stringify(summary, null, 2));
+
     // If no OpenAI API key, return mock response
     if (!this.openai) {
+      console.log('[SandboxAI] No OpenAI API key found, returning mock response');
       return this.getMockResponse(summary.summary);
     }
+
+    console.log('[SandboxAI] OpenAI API key available, proceeding with AI generation...');
+
+    // Ensure FAQs is an array for safe processing
+    const faqsArray = Array.isArray(propertyData.faqs) ? propertyData.faqs : [];
+    const validFaqs = faqsArray.filter(f => f && f.question && f.answer);
+
+    // Build comprehensive property information from all available data
+    const propertyInfo = this.buildComprehensivePropertyInfo(propertyData);
 
     const prompt = `
 You are a helpful property host assistant. Generate a friendly, professional response to the guest.
@@ -375,13 +498,10 @@ You are a helpful property host assistant. Generate a friendly, professional res
 Guest Message Summary:
 ${JSON.stringify(summary.summary, null, 2)}
 
-Property Information:
-- Name: ${propertyData.name}
-- Check-in: ${propertyData.check_in_time}
-- Check-out: ${propertyData.check_out_time}
+${propertyInfo}
 
 Available FAQs:
-${propertyData.faqs ? propertyData.faqs.map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n') : 'None'}
+${validFaqs.length > 0 ? validFaqs.map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n') : 'None'}
 
 Generate a response that:
 1. Addresses the guest's concern

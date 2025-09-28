@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Phone, MessageCircle, Send, ArrowLeft, Bot, BotOff, User, CheckSquare, ExternalLink, Search } from 'lucide-react'
+import { Phone, MessageCircle, Send, ArrowLeft, Bot, BotOff, User, CheckSquare, ExternalLink, Search, ChevronDown, Crown } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { cn } from '../lib/utils'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Switch } from '../components/ui/switch'
 import apiService from '../services/api'
 
@@ -14,6 +14,7 @@ import apiService from '../services/api'
 
 export default function MessagesPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
@@ -23,6 +24,20 @@ export default function MessagesPage() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [error, setError] = useState(null)
   const [conversationLoading, setConversationLoading] = useState(false)
+
+  // Sandbox mode detection and persona state
+  const isSandboxMode = location.pathname === '/sandbox'
+  const [selectedPersona, setSelectedPersona] = useState({
+    type: 'guest',
+    label: 'Guest',
+    icon: User
+  })
+
+  const personas = [
+    { type: 'guest', label: 'Guest', icon: User },
+    { type: 'host', label: 'Host', icon: Crown },
+    { type: 'staff', label: 'Staff', icon: Bot }
+  ]
 
   // Memoized loadConversations function to prevent unnecessary recreations
   const loadConversations = useCallback(async (isSearch = false) => {
@@ -36,23 +51,47 @@ export default function MessagesPage() {
       
       setError(null)
       
-      const response = await apiService.getConversations({ 
-        search: searchQuery || undefined,
-        limit: 50 
-      })
-      
-      setConversations(response.data || [])
+      // Load sandbox sessions if in sandbox mode, otherwise load regular conversations
+      let response
+      if (isSandboxMode) {
+        response = await apiService.getSandboxSessions()
+        // Transform sandbox sessions to conversation format
+        const transformedSessions = (response.data || []).map(session => ({
+          id: session.id,
+          guestName: session.scenario_data?.guest_name || 'Unknown Guest',
+          phone: session.scenario_data?.guest_phone || 'No phone',
+          property: session.property_name || 'Unknown Property',
+          lastMessage: session.message_count > 0 ? 'Last message...' : 'No messages yet',
+          timestamp: new Date(session.updated_at || session.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          unread: 0,
+          unreadCount: 0,
+          isActive: session.is_active,
+          messages: [], // Will be loaded when conversation is selected
+          isSandbox: true,
+          scenario: session.scenario_data
+        }))
+        setConversations(transformedSessions)
+      } else {
+        // Regular conversation loading
+        response = await apiService.getConversations({
+          search: searchQuery || undefined,
+          limit: 50
+        })
+        setConversations(response.data || [])
+      }
       
       // Only update conversation states if we don't already have them or if data changed
-      setConversationStates(prevStates => {
-        const newStates = {}
-        response.data?.forEach(conv => {
-          newStates[conv.id] = { 
-            autoResponseEnabled: prevStates[conv.id]?.autoResponseEnabled ?? conv.autoResponseEnabled ?? true 
-          }
+      if (!isSandboxMode) {
+        setConversationStates(prevStates => {
+          const newStates = {}
+          response.data?.forEach(conv => {
+            newStates[conv.id] = {
+              autoResponseEnabled: prevStates[conv.id]?.autoResponseEnabled ?? conv.autoResponseEnabled ?? true
+            }
+          })
+          return newStates
         })
-        return newStates
-      })
+      }
       
     } catch (err) {
       console.error('Failed to load conversations:', err)
@@ -61,7 +100,7 @@ export default function MessagesPage() {
       setInitialLoading(false)
       setSearchLoading(false)
     }
-  }, [searchQuery, initialLoading])
+  }, [searchQuery, initialLoading, isSandboxMode])
 
   // Single useEffect to handle both initial load and search with debouncing
   useEffect(() => {
@@ -86,17 +125,34 @@ export default function MessagesPage() {
     try {
       setConversationLoading(true)
       setError(null)
-      
+
       // If we already have messages in the conversation, use them
       if (conversation.messages && conversation.messages.length > 0) {
         setSelectedConversation(conversation)
         return
       }
-      
-      // Otherwise, load full conversation from API
-      const response = await apiService.getConversation(conversation.id)
-      setSelectedConversation(response.data)
-      
+
+      // Handle sandbox sessions differently
+      if (conversation.isSandbox) {
+        // For sandbox sessions, load the session details
+        const response = await apiService.getSandboxSession(conversation.id)
+        const sessionData = response.data
+
+        // Create a conversation-like object with sandbox session data
+        const sandboxConversation = {
+          ...conversation,
+          messages: sessionData.messages || [],
+          guestName: sessionData.scenario_data?.guest_name || conversation.guestName,
+          property: sessionData.property_name || conversation.property,
+          scenario: sessionData.scenario_data
+        }
+        setSelectedConversation(sandboxConversation)
+      } else {
+        // Regular conversation loading
+        const response = await apiService.getConversation(conversation.id)
+        setSelectedConversation(response.data)
+      }
+
     } catch (err) {
       console.error('Failed to load conversation:', err)
       setError('Failed to load conversation messages. Please try again.')
@@ -491,9 +547,34 @@ export default function MessagesPage() {
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
+                  placeholder={isSandboxMode
+                    ? `Type message as ${selectedPersona.label}${selectedConversation ? ` (${selectedConversation.name || 'Unknown'})` : ''}...`
+                    : "Type your message..."
+                  }
                   className="flex-1"
                 />
+
+                {/* Persona Switcher for Sandbox Mode */}
+                {isSandboxMode && (
+                  <div className="relative">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const currentIndex = personas.findIndex(p => p.type === selectedPersona.type)
+                        const nextIndex = (currentIndex + 1) % personas.length
+                        setSelectedPersona(personas[nextIndex])
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 h-10"
+                    >
+                      <selectedPersona.icon className="h-4 w-4" />
+                      <span className="text-sm">{selectedPersona.label}</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+
                 <Button type="submit" size="icon">
                   <Send className="h-4 w-4" />
                 </Button>

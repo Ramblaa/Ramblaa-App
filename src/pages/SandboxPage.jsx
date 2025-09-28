@@ -216,6 +216,7 @@ function getRelevantPersonas(conversation, currentSession, hostName = 'Harrison 
     icon: User,
     color: 'bg-blue-100 text-blue-600',
     sender: 'guest',
+    senderType: 'guest',
     name: guestName
   })
 
@@ -316,13 +317,56 @@ export default function SandboxPage() {
     return statusMatch && propertyMatch && searchMatch
   })
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
+    e.preventDefault()
+    if (!newMessage.trim() || !selectedConversation) return
+
+    const messageText = newMessage.trim()
+    setNewMessage('') // Clear input immediately for better UX
+
+    try {
+      // Check if auto-response is enabled for guest messages
+      const shouldAutoRespond = selectedPersona.senderType === 'guest' && isAutoResponseEnabled
+
+      // Send message to backend
+      await apiService.sendSandboxMessage(
+        selectedConversation.id,
+        messageText,
+        selectedPersona.senderType,
+        selectedPersona.sender,
+        shouldAutoRespond
+      )
+
+      // Capture initial message count before reloading
+      const initialMessageCount = selectedConversation?.messages?.length || 0;
+
+      // Reload conversation messages to get the sent message
+      await loadConversationMessages(selectedConversation)
+
+      // If auto-response is expected, poll for AI response
+      if (shouldAutoRespond) {
+        console.log('[SandboxPage] Auto-response expected, starting polling...')
+        // Add 1 to account for the message we just sent
+        pollForAIResponse(selectedConversation.id, initialMessageCount + 1)
+      }
+
+    } catch (error) {
+      console.error('Failed to send message:', error)
+      // Show error to user
+      alert('Failed to send message. Please try again.')
+      // Restore the message text
+      setNewMessage(messageText)
+    }
+  }
+
+  // Legacy code for updating local state - keeping for reference but not used with API integration
+  const handleSendMessageLocal = (e) => {
     e.preventDefault()
     if (!newMessage.trim() || !selectedConversation) return
 
     const now = new Date()
     const timestamp = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    
+
     const newMessageObj = {
       id: Date.now(),
       text: newMessage.trim(),
@@ -602,6 +646,50 @@ export default function SandboxPage() {
       // Still set the conversation even if messages fail to load
       setSelectedConversation(conversation);
     }
+  };
+
+  // Poll for AI response after sending a guest message
+  const pollForAIResponse = (sessionId, initialMessageCount) => {
+    const POLL_INTERVAL = 2000; // 2 seconds
+    const MAX_POLLS = 15; // Max 30 seconds
+    let pollCount = 0;
+
+    console.log(`[SandboxPage] Starting to poll for AI response. Initial message count: ${initialMessageCount}`);
+
+    const poll = async () => {
+      try {
+        pollCount++;
+        console.log(`[SandboxPage] Polling for AI response (${pollCount}/${MAX_POLLS})...`);
+
+        const response = await apiService.getSandboxSession(sessionId);
+        const sessionData = response.data;
+
+        console.log(`[SandboxPage] Current message count: ${sessionData.messages.length}, Initial: ${initialMessageCount}`);
+
+        // Check if there are new messages since we started polling
+        if (sessionData.messages.length > initialMessageCount) {
+          console.log('[SandboxPage] New messages detected, updating conversation...');
+          const transformedMessages = sessionData.messages.map(transformMessage);
+          setSelectedConversation(prev => ({
+            ...prev,
+            messages: transformedMessages
+          }));
+          return; // Stop polling
+        }
+
+        // Continue polling if we haven't reached max attempts
+        if (pollCount < MAX_POLLS) {
+          setTimeout(poll, POLL_INTERVAL);
+        } else {
+          console.log('[SandboxPage] Polling timeout - no AI response received');
+        }
+      } catch (error) {
+        console.error('[SandboxPage] Error during polling:', error);
+      }
+    };
+
+    // Start polling after a short delay
+    setTimeout(poll, 1000);
   };
 
   const loadSessionData = async (sessionId) => {
