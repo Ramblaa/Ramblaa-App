@@ -221,13 +221,13 @@ export default function MessagesPage() {
     <div className="h-full flex">
       {/* Conversations List */}
       <div className={cn(
-        "w-full lg:w-96 border-r bg-background",
-        selectedConversation ? "hidden lg:block" : "block"
+        "w-full lg:w-96 border-r bg-background flex flex-col",
+        selectedConversation ? "hidden lg:flex" : "flex"
       )}>
-        <div className="p-4 sm:p-6 border-b">
+        <div className="p-4 sm:p-6 border-b flex-shrink-0">
           <h1 className="text-xl sm:text-2xl font-bold text-brand-dark">Messages</h1>
           <p className="text-sm sm:text-base text-brand-mid-gray">Guest conversations</p>
-          
+
           {/* Search Input */}
           <div className="mt-3 sm:mt-4 relative">
             <Search className={cn(
@@ -247,8 +247,8 @@ export default function MessagesPage() {
             )}
           </div>
         </div>
-        
-        <div className="overflow-y-auto">
+
+        <div className="flex-1 overflow-y-auto">
           {error && (
             <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600 text-sm">{error}</p>
@@ -418,8 +418,8 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* Messages Container - with bottom padding for fixed input */}
-            <div className="flex-1 overflow-y-auto pb-20 lg:pb-0">
+            {/* Messages Container */}
+            <div className="flex-1 overflow-y-auto">
               <div className="p-4 space-y-4">
                 {conversationLoading ? (
                   <div className="flex items-center justify-center h-32">
@@ -448,24 +448,24 @@ export default function MessagesPage() {
                           {getSenderBadge(message)}
                         </div>
                       )}
-                      
+
                       {/* Message Bubble */}
                       <div className={cn(
                         "px-3 sm:px-4 py-2 rounded-lg",
-                        message.sender === 'host' 
+                        message.sender === 'host'
                           ? "bg-brand-purple text-white" // Both Rambley and Host use purple background
                           : "bg-brand-vanilla text-brand-dark" // Guest messages unchanged
                       )}>
                         <p className="text-sm leading-relaxed">{message.text}</p>
                         <p className={cn(
                           "text-xs mt-1",
-                          message.sender === 'host' 
+                          message.sender === 'host'
                             ? "text-white/70" // Both Rambley and Host timestamps
                             : "text-brand-mid-gray" // Guest timestamp
                         )}>
                           {message.timestamp}
                         </p>
-                        
+
                         {/* Task Links */}
                         {renderTaskLinks(message.generatedTasks)}
                       </div>
@@ -477,8 +477,8 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* Message Input - Fixed on mobile, normal on desktop */}
-            <div className="fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto p-4 border-t bg-background z-20 safe-area-inset-bottom">
+            {/* Message Input - Fixed at bottom of chat area */}
+            <div className="p-4 border-t bg-background">
               {!isAutoResponseEnabled && (
                 <div className="mb-3 p-2 bg-brand-vanilla/50 rounded-lg border border-brand-vanilla">
                   <div className="flex items-center gap-2 text-sm text-brand-dark">

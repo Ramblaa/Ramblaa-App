@@ -107,7 +107,7 @@ router.post('/login', [
 
 // POST /api/auth/register (Admin only)
 router.post('/register', authenticateToken, requireAdmin, [
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().toLowerCase(),
   body('firstName').trim().isLength({ min: 1 }),
   body('lastName').trim().isLength({ min: 1 }),
   body('role').isIn(['admin', 'user']),
@@ -156,7 +156,7 @@ router.post('/register', authenticateToken, requireAdmin, [
 
 // POST /api/auth/signup (Public signup for regular users)
 router.post('/signup', [
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().toLowerCase(),
   body('firstName').trim().isLength({ min: 1 }).withMessage('First name is required'),
   body('lastName').trim().isLength({ min: 1 }).withMessage('Last name is required'),
   ...passwordValidation
@@ -172,6 +172,8 @@ router.post('/signup', [
 
     const { email, password, firstName, lastName } = req.body;
 
+    console.log('Signup attempt for email:', email);
+
     // Check if user already exists
     const existingUser = await pool.query(
       'SELECT id FROM users WHERE email = $1',
@@ -179,6 +181,7 @@ router.post('/signup', [
     );
 
     if (existingUser.rows.length > 0) {
+      console.log('Email already exists in database:', email);
       return res.status(400).json({ error: 'User with this email already exists' });
     }
 
