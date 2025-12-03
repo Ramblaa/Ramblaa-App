@@ -138,16 +138,15 @@ router.post('/register', authenticateToken, requireAdmin, [
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user
-    const id = crypto.randomUUID();
-    await db.prepare(
-      `INSERT INTO users (id, email, password_hash, first_name, last_name, role, is_active, email_verified) 
-       VALUES (?, ?, ?, ?, ?, ?, true, true)`
-    ).run([id, email, passwordHash, firstName, lastName, role]);
+    const result = await db.prepare(
+      `INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, email_verified) 
+       VALUES (?, ?, ?, ?, ?, true, true) RETURNING id`
+    ).get([email, passwordHash, firstName, lastName, role]);
 
     res.status(201).json({
       message: 'User created successfully',
       user: {
-        id,
+        id: result?.id,
         email,
         firstName,
         lastName,
@@ -193,18 +192,17 @@ router.post('/signup', [
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user (auto-activate for now until email service is configured)
-    const id = crypto.randomUUID();
-    await db.prepare(
-      `INSERT INTO users (id, email, password_hash, first_name, last_name, role, is_active, email_verified, email_verification_token, email_verification_expires) 
-       VALUES (?, ?, ?, ?, ?, 'user', true, true, ?, ?)`
-    ).run([id, email, passwordHash, firstName, lastName, verificationToken, verificationExpires]);
+    const result = await db.prepare(
+      `INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, email_verified, email_verification_token, email_verification_expires) 
+       VALUES (?, ?, ?, ?, 'user', true, true, ?, ?) RETURNING id`
+    ).get([email, passwordHash, firstName, lastName, verificationToken, verificationExpires]);
 
     // TODO: Send verification email when email service is configured
 
     res.status(201).json({
       message: 'Account created successfully!',
       user: {
-        id,
+        id: result?.id,
         email,
         firstName,
         lastName
