@@ -374,5 +374,33 @@ router.post('/verify-email', [
   }
 });
 
+// TEMPORARY: Seed/activate admin user (remove after initial setup)
+router.post('/seed-admin', async (req, res) => {
+  try {
+    const db = getDb();
+    
+    // Activate all existing users
+    await db.prepare(
+      'UPDATE users SET is_active = true, email_verified = true WHERE is_active = false'
+    ).run([]);
+    
+    // Make admin@rambley.com an admin
+    await db.prepare(
+      "UPDATE users SET role = 'admin' WHERE email = 'admin@rambley.com'"
+    ).run([]);
+    
+    // Get count of activated users
+    const users = await db.prepare('SELECT email, role, is_active FROM users').all([]);
+    
+    res.json({ 
+      message: 'Admin seeded successfully', 
+      users: users 
+    });
+  } catch (error) {
+    console.error('[Auth] Seed admin error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 
