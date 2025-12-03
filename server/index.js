@@ -18,36 +18,47 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - allow frontend origins
-const allowedOrigins = [
-  config.server.corsOrigin,
-  'https://frontend-staging-danyon.up.railway.app',
-  'https://ramblaa-app-production.up.railway.app',
-  'http://localhost:5174',
-  'http://localhost:5173',
-].filter(Boolean);
-
+// CORS configuration - allow all Railway origins and localhost
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin is allowed
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed) || origin.includes('.railway.app'))) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) {
       return callback(null, true);
     }
     
-    console.warn(`[CORS] Blocked origin: ${origin}`);
-    return callback(null, true); // Allow all for now during development
+    // Allow all railway.app origins and localhost
+    if (origin.includes('.railway.app') || 
+        origin.includes('localhost') || 
+        origin.includes('127.0.0.1')) {
+      console.log('[CORS] Allowed origin:', origin);
+      return callback(null, origin); // Return the actual origin
+    }
+    
+    // Allow configured CORS origin
+    if (config.server.corsOrigin && origin === config.server.corsOrigin) {
+      return callback(null, origin);
+    }
+    
+    console.warn('[CORS] Blocked origin:', origin);
+    return callback(null, origin); // Allow all for now during development
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
   optionsSuccessStatus: 200
 }));
 
-// Handle preflight requests
-app.options('*', cors());
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // Rate limiting
 const limiter = rateLimit({
@@ -122,3 +133,4 @@ async function start() {
 }
 
 start();
+
