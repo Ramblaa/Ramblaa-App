@@ -30,6 +30,15 @@ export const config = {
   server: {
     port: parseInt(process.env.PORT || '3001', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
+    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5174',
+  },
+
+  // JWT Authentication
+  jwt: {
+    secret: process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-production',
+    accessTokenExpiry: '15m',
+    refreshTokenExpiry: '7d',
   },
 
   // External Webhook
