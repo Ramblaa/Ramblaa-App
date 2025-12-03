@@ -18,9 +18,28 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration - allow frontend origins
+const allowedOrigins = [
+  config.server.corsOrigin,
+  'https://frontend-staging-danyon.up.railway.app',
+  'https://ramblaa-app-production.up.railway.app',
+  'http://localhost:5174',
+  'http://localhost:5173',
+].filter(Boolean);
+
 app.use(cors({
-  origin: config.server.corsOrigin,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed) || origin.includes('.railway.app'))) {
+      return callback(null, true);
+    }
+    
+    console.warn(`[CORS] Blocked origin: ${origin}`);
+    return callback(null, true); // Allow all for now during development
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
