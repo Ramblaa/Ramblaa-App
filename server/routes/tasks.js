@@ -62,24 +62,28 @@ router.get('/', async (req, res) => {
     const tasks = await db.prepare(sql).all(...params);
 
     // Format response
-    const formatted = tasks.map(task => ({
-      id: task.id,
-      title: task.task_request_title || task.action_title || task.task_bucket,
-      type: getTaskType(task.task_bucket),
-      property: task.property_name || 'Unknown',
-      propertyId: task.property_id,
-      assignee: task.staff_name || 'Unassigned',
-      assigneePhone: task.staff_phone,
-      dueDate: task.created_at?.split('T')[0],
-      dueTime: task.created_at?.split('T')[1]?.slice(0, 5),
-      status: formatStatus(task.status),
-      priority: getPriority(task.urgency_indicators),
-      description: task.guest_message || '',
-      threadCount: 1, // Would need to count from messages
-      actionHolder: task.action_holder,
-      guestPhone: task.phone,
-      guestName: task.guest_name,
-    }));
+    const formatted = tasks.map(task => {
+      // Handle date - PostgreSQL returns Date objects, not strings
+      const createdAt = task.created_at ? new Date(task.created_at).toISOString() : null;
+      return {
+        id: task.id,
+        title: task.task_request_title || task.action_title || task.task_bucket,
+        type: getTaskType(task.task_bucket),
+        property: task.property_name || 'Unknown',
+        propertyId: task.property_id,
+        assignee: task.staff_name || 'Unassigned',
+        assigneePhone: task.staff_phone,
+        dueDate: createdAt?.split('T')[0],
+        dueTime: createdAt?.split('T')[1]?.slice(0, 5),
+        status: formatStatus(task.status),
+        priority: getPriority(task.urgency_indicators),
+        description: task.guest_message || '',
+        threadCount: 1, // Would need to count from messages
+        actionHolder: task.action_holder,
+        guestPhone: task.phone,
+        guestName: task.guest_name,
+      };
+    });
 
     res.json(formatted);
   } catch (error) {
