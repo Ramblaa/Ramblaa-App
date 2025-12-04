@@ -929,15 +929,23 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
     let notifyGuest = false;
     let guestMessage = '';
 
+    // Determine action holder based on who responded
+    let newActionHolder = role === 'Staff' ? 'Guest' : 'Staff'; // Flip to the other party
+    
     if (requirementsMet) {
       // Requirements are met - use AI to generate guest notification
-      newStatus = 'Scheduled';  // Or 'Completed' if staff said it's done
-      
-      // Check if staff said it's already done
       const lowerBody = body.toLowerCase();
+      
+      // Check if staff said it's already done/completed
       if (lowerBody.includes('done') || lowerBody.includes('completed') || 
-          lowerBody.includes('delivered') || lowerBody.includes('finished')) {
+          lowerBody.includes('delivered') || lowerBody.includes('finished') ||
+          lowerBody.includes('all set') || lowerBody.includes('taken care')) {
         newStatus = 'Completed';
+        newActionHolder = 'None';  // Task is complete, no one needs to act
+      } else {
+        // Staff confirmed a schedule but hasn't done it yet
+        newStatus = 'Scheduled';
+        newActionHolder = 'Staff';  // Staff still needs to complete it
       }
       
       // Generate AI response to guest
@@ -951,24 +959,27 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
           lowerBody.includes('unable') || lowerBody.includes('no stock') ||
           lowerBody.includes('not available')) {
         newStatus = 'Escalated';
-        console.log(`[TaskManager] Staff indicated inability - escalating task`);
+        newActionHolder = 'Host';  // Escalate to host
+        console.log(`[TaskManager] Staff indicated inability - escalating task to Host`);
       } else {
         newStatus = 'In Progress';
+        newActionHolder = 'Staff';  // Staff still working on it
         console.log(`[TaskManager] Requirements not yet met, keeping as In Progress`);
       }
     }
 
-    console.log(`[TaskManager] Status update: ${task.status} -> ${newStatus}`);
+    console.log(`[TaskManager] Status: ${task.status} -> ${newStatus}, ActionHolder: ${task.action_holder} -> ${newActionHolder}`);
 
-    // Update task
+    // Update task with new status and action holder
     await db.prepare(`
       UPDATE tasks SET 
         status = ?,
+        action_holder = ?,
         message_chain_ids = ?,
         response_received = 1,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(newStatus, updatedChain, task.id);
+    `).run(newStatus, newActionHolder, updatedChain, task.id);
 
     // Log the response in task logs
     try {
@@ -995,6 +1006,14 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
           },
         });
         console.log(`[TaskManager] ✓ Notified guest of task update`);
+        
+        // If task is completed or scheduled, mark completion_notified
+        if (newStatus === 'Completed' || newStatus === 'Scheduled') {
+          await db.prepare(`
+            UPDATE tasks SET completion_notified = 1 WHERE id = ?
+          `).run(task.id);
+          console.log(`[TaskManager] ✓ Marked task as completion_notified`);
+        }
       } catch (err) {
         console.error(`[TaskManager] ✗ Failed to notify guest:`, err.message);
       }
