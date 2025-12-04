@@ -367,7 +367,7 @@ router.get('/:id/staff', (req, res) => {
  * POST /api/properties/:id/staff
  * Create a staff member
  */
-router.post('/:id/staff', (req, res) => {
+router.post('/:id/staff', async (req, res) => {
   try {
     const { id: propertyId } = req.params;
     const { name, phone, role, preferredLanguage, details } = req.body;
@@ -379,7 +379,7 @@ router.post('/:id/staff', (req, res) => {
 
     const id = uuidv4();
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO staff (id, property_id, name, phone, role, preferred_language, details_json)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(
@@ -392,7 +392,7 @@ router.post('/:id/staff', (req, res) => {
       details ? JSON.stringify(details) : null
     );
 
-    const staff = db.prepare('SELECT * FROM staff WHERE id = ?').get(id);
+    const staff = await db.prepare('SELECT * FROM staff WHERE id = ?').get(id);
     res.status(201).json(staff);
   } catch (error) {
     console.error('[Staff] Create error:', error);
