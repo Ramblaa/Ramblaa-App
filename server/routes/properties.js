@@ -13,12 +13,12 @@ const router = Router();
  * GET /api/properties
  * Get all properties
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const db = getDb();
     const { limit = 100 } = req.query;
 
-    const properties = db.prepare(`
+    const properties = await db.prepare(`
       SELECT p.*,
         (SELECT COUNT(*) FROM bookings b WHERE b.property_id = p.id) as booking_count,
         (SELECT COUNT(*) FROM tasks t WHERE t.property_id = p.id AND t.status != 'Completed') as active_tasks

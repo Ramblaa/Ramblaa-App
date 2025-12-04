@@ -14,7 +14,7 @@ const router = Router();
  * GET /api/messages
  * Get all conversations (grouped by phone number)
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const db = getDb();
     const { propertyId, limit = 50 } = req.query;
@@ -49,7 +49,7 @@ router.get('/', (req, res) => {
     `;
     params.push(parseInt(limit, 10));
 
-    const conversations = db.prepare(sql).all(...params);
+    const conversations = await db.prepare(sql).all(...params);
 
     // Format response
     const formatted = conversations.map(conv => ({
@@ -76,7 +76,7 @@ router.get('/', (req, res) => {
  * GET /api/messages/:phone
  * Get conversation history for a phone number
  */
-router.get('/:phone', (req, res) => {
+router.get('/:phone', async (req, res) => {
   try {
     const db = getDb();
     const { phone } = req.params;
@@ -87,7 +87,7 @@ router.get('/:phone', (req, res) => {
     const pattern = `%${tokens.last10}%`;
 
     // Get all messages for this phone
-    const messages = db.prepare(`
+    const messages = await db.prepare(`
       SELECT m.*, 
         CASE 
           WHEN m.message_type = 'Inbound' THEN 'guest'
@@ -112,7 +112,7 @@ router.get('/:phone', (req, res) => {
     let propertyId = null;
 
     if (firstMsg?.booking_id) {
-      const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(firstMsg.booking_id);
+      const booking = await db.prepare('SELECT * FROM bookings WHERE id = ?').get(firstMsg.booking_id);
       if (booking) {
         guestName = booking.guest_name || guestName;
         bookingId = booking.id;
@@ -121,7 +121,7 @@ router.get('/:phone', (req, res) => {
     }
 
     if (firstMsg?.property_id || propertyId) {
-      const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(firstMsg?.property_id || propertyId);
+      const property = await db.prepare('SELECT * FROM properties WHERE id = ?').get(firstMsg?.property_id || propertyId);
       if (property) {
         propertyName = property.name;
         propertyId = property.id;

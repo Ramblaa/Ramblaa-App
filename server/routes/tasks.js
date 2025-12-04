@@ -21,7 +21,7 @@ const router = Router();
  * GET /api/tasks
  * Get all tasks with optional filters
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { propertyId, status, assignee, limit = 100 } = req.query;
     const db = getDb();
@@ -59,7 +59,7 @@ router.get('/', (req, res) => {
     sql += ' ORDER BY t.created_at DESC LIMIT ?';
     params.push(parseInt(limit, 10));
 
-    const tasks = db.prepare(sql).all(...params);
+    const tasks = await db.prepare(sql).all(...params);
 
     // Format response
     const formatted = tasks.map(task => ({
@@ -92,12 +92,12 @@ router.get('/', (req, res) => {
  * GET /api/tasks/:id
  * Get task details
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
 
-    const task = db.prepare(`
+    const task = await db.prepare(`
       SELECT t.*, 
         p.name as property_name,
         b.guest_name
@@ -112,7 +112,7 @@ router.get('/:id', (req, res) => {
     }
 
     // Get related messages
-    const messages = db.prepare(`
+    const messages = await db.prepare(`
       SELECT * FROM messages 
       WHERE reference_task_ids LIKE ?
       ORDER BY created_at ASC
