@@ -377,18 +377,29 @@ router.post('/seed-admin', async (req, res) => {
   try {
     const db = getDb();
     
-    // Activate all existing users
-    await db.prepare(
-      'UPDATE users SET is_active = true, email_verified = true WHERE is_active = false'
-    ).run([]);
+    // Delete any malformed users (with quotes in email)
+    await db.prepare("DELETE FROM users WHERE email LIKE '%''%'").run([]);
     
-    // Make admin@rambley.com an admin
-    await db.prepare(
-      "UPDATE users SET role = 'admin' WHERE email = 'admin@rambley.com'"
-    ).run([]);
+    // Check if admin exists
+    const existing = await db.prepare("SELECT id FROM users WHERE email = 'admin@rambley.com'").get([]);
     
-    // Get count of activated users
-    const users = await db.prepare('SELECT email, role, is_active FROM users').all([]);
+    if (!existing) {
+      // Create admin with proper bcrypt hash for "AdminPass123!"
+      const passwordHash = await bcrypt.hash('AdminPass123!', 12);
+      await db.prepare(
+        `INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, email_verified) 
+         VALUES ('admin@rambley.com', ?, 'Admin', 'User', 'admin', true, true)`
+      ).run([passwordHash]);
+    } else {
+      // Update existing to ensure it's active and admin
+      const passwordHash = await bcrypt.hash('AdminPass123!', 12);
+      await db.prepare(
+        "UPDATE users SET password_hash = ?, role = 'admin', is_active = true, email_verified = true WHERE email = 'admin@rambley.com'"
+      ).run([passwordHash]);
+    }
+    
+    // Get all users
+    const users = await db.prepare('SELECT id, email, role, is_active FROM users').all([]);
     
     res.json({ 
       message: 'Admin seeded successfully', 
