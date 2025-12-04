@@ -401,6 +401,84 @@ router.post('/:id/staff', async (req, res) => {
 });
 
 // ============================================================================
+// TASK DEFINITIONS
+// ============================================================================
+
+/**
+ * GET /api/properties/:id/task-definitions
+ * Get task definitions for a property
+ */
+router.get('/:id/task-definitions', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+
+    const taskDefs = await db.prepare('SELECT * FROM task_definitions WHERE property_id = ? ORDER BY sub_category_name').all(id);
+
+    res.json(taskDefs.map(t => ({
+      id: t.id,
+      propertyId: t.property_id,
+      subCategory: t.sub_category_name,
+      hostEscalation: t.host_escalation,
+      staffRequirements: t.staff_requirements,
+      guestRequirements: t.guest_requirements,
+      staffId: t.staff_id,
+      staffName: t.staff_name,
+      staffPhone: t.staff_phone,
+      details: t.details_json ? JSON.parse(t.details_json) : {},
+      createdAt: t.created_at,
+    })));
+  } catch (error) {
+    console.error('[TaskDefs] List error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/properties/:id/task-definitions
+ * Create a task definition
+ */
+router.post('/:id/task-definitions', async (req, res) => {
+  try {
+    const { id: propertyId } = req.params;
+    const { subCategory, description, hostEscalation, staffRequirements, guestRequirements, staffId, staffName, staffPhone, details } = req.body;
+    const db = getDb();
+
+    if (!subCategory) {
+      return res.status(400).json({ error: 'Missing required field: subCategory' });
+    }
+
+    // Include description in details
+    const detailsObj = {
+      ...(details || {}),
+      description: description || '',
+      primaryCategory: req.body.primaryCategory || 'Other',
+    };
+
+    const result = await db.prepare(`
+      INSERT INTO task_definitions (property_id, sub_category_name, host_escalation, staff_requirements, guest_requirements, staff_id, staff_name, staff_phone, details_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+    `).get(
+      propertyId,
+      subCategory,
+      hostEscalation || null,
+      staffRequirements || null,
+      guestRequirements || null,
+      staffId || null,
+      staffName || null,
+      staffPhone || null,
+      JSON.stringify(detailsObj)
+    );
+
+    const taskDef = await db.prepare('SELECT * FROM task_definitions WHERE id = ?').get(result?.id);
+    res.status(201).json(taskDef);
+  } catch (error) {
+    console.error('[TaskDefs] Create error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
 // SEED DATA (Temporary - for testing)
 // ============================================================================
 
