@@ -452,5 +452,73 @@ function safeJsonParse(str) {
   }
 }
 
+/**
+ * GET /api/tasks/diagnostics
+ * Diagnostic endpoint to verify data flow
+ */
+router.get('/diagnostics', async (req, res) => {
+  try {
+    const db = getDb();
+    
+    // Get recent messages
+    const recentMessages = await db.prepare(`
+      SELECT id, from_number, body, booking_id, property_id, requestor_role, created_at
+      FROM messages
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all();
+    
+    // Get recent AI logs
+    const recentAiLogs = await db.prepare(`
+      SELECT id, message, task_required, task_bucket, task_created, property_id, booking_id, created_at
+      FROM ai_logs
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all();
+    
+    // Get recent tasks
+    const recentTasks = await db.prepare(`
+      SELECT id, task_bucket, staff_name, staff_phone, property_id, status, created_at
+      FROM tasks
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all();
+    
+    // Get task definitions
+    const taskDefs = await db.prepare(`
+      SELECT property_id, sub_category_name, staff_name, staff_phone
+      FROM task_definitions
+      LIMIT 20
+    `).all();
+    
+    // Get debug logs
+    const debugLogs = await db.prepare(`
+      SELECT id, function_name, phase, 
+             SUBSTRING(prompt, 1, 300) as prompt_start,
+             SUBSTRING(response, 1, 300) as response_start,
+             created_at
+      FROM debug_ai_logs
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all();
+    
+    res.json({
+      timestamp: new Date().toISOString(),
+      version: '2024-12-04-v4',
+      recentMessages: recentMessages.map(m => ({
+        ...m,
+        body: m.body?.substring(0, 100),
+      })),
+      recentAiLogs,
+      recentTasks,
+      taskDefinitions: taskDefs,
+      debugLogs,
+    });
+  } catch (error) {
+    console.error('[Tasks] Diagnostics error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 

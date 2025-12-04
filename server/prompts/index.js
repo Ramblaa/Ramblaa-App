@@ -82,33 +82,33 @@ Your output **must be a single, valid JSON object** matching the schema below �
 // MESSAGE SUMMARIZATION
 // ============================================================================
 
-// VERSION: 2024-12-04-v3 - Fixed action extraction
+// VERSION: 2024-12-04-v4 - CRITICAL FIX: Only extract from CURRENT message
 export const PROMPT_SUMMARIZE_MESSAGE_ACTIONS = `
-Extract actions from the guest message below. Output ONLY what the guest explicitly requested.
+READ THE CURRENT MESSAGE BELOW AND EXTRACT ONLY ITS REQUESTS.
 
-GUEST MESSAGE:
-"{{MESSAGE}}"
+===== CURRENT MESSAGE (extract from THIS only) =====
+{{MESSAGE}}
+===== END CURRENT MESSAGE =====
 
-OUTPUT RULES:
-- Return JSON with "Action Titles" array
-- Use EXACT words from the message (e.g., "fresh towels" → "Fresh towels request")
-- Maximum 2 actions
-- Ignore greetings ("Hi", "Hello", "Hi there")
+TASK: Extract 1-2 action titles from the CURRENT MESSAGE above.
 
-FORBIDDEN - NEVER OUTPUT THESE:
-- "Request directions to villa" 
-- "Request Wi-Fi password" (unless message contains "wifi")
-- Any action not explicitly in the message
+CRITICAL RULES:
+1. Extract ONLY from the text between "CURRENT MESSAGE" markers above
+2. DO NOT extract from the history below - history is for CONTEXT ONLY
+3. Use the guest's EXACT words (e.g., if they say "fresh towels" → "Fresh towels request")
+4. Ignore greetings like "Hi", "Hello", "Hi there"
+5. If message only contains a greeting or acknowledgment, return empty Action Titles array
 
-Return ONLY this JSON structure:
+OUTPUT FORMAT (strict JSON):
 {
   "Language": "en",
   "Tone": "Friendly",
-  "Sentiment": "Neutral", 
-  "Action Titles": []
+  "Sentiment": "Neutral",
+  "Action Titles": ["<action from current message>"]
 }
 
-Fill "Action Titles" with 1-2 actions extracted from the message above.
+HISTORY (for context understanding ONLY - do NOT extract actions from here):
+{{HISTORICAL_MESSAGES}}
 `;
 
 // ============================================================================

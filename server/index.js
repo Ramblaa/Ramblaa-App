@@ -110,6 +110,20 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// Build version for deployment verification
+const BUILD_VERSION = '2024-12-04-v4';
+const BUILD_TIMESTAMP = new Date().toISOString();
+
+// Version endpoint for deployment verification
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: BUILD_VERSION,
+    buildTime: BUILD_TIMESTAMP,
+    uptime: process.uptime(),
+    nodeVersion: process.version,
+  });
+});
+
 // Initialize database and start server
 async function start() {
   try {
@@ -122,6 +136,10 @@ async function start() {
     console.log(`[Server] PORT env var: ${process.env.PORT}`);
     
     app.listen(port, host, () => {
+      console.log('========================================');
+      console.log(`[Server] VERSION: ${BUILD_VERSION}`);
+      console.log(`[Server] BUILD TIME: ${BUILD_TIMESTAMP}`);
+      console.log('========================================');
       console.log(`[Server] Running on ${host}:${port}`);
       console.log(`[Server] Environment: ${config.server.nodeEnv}`);
       console.log(`[Server] CORS origin: ${config.server.corsOrigin}`);

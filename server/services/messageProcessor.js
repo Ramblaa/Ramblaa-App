@@ -104,9 +104,12 @@ async function summarizeMessage(messageBody, history = '[]') {
   };
   const prompt = fillTemplate(PROMPT_SUMMARIZE_MESSAGE_ACTIONS, templateVars);
 
-  console.log('[MessageProcessor] === SUMMARIZATION START ===');
-  console.log('[MessageProcessor] Prompt version: 2024-12-04-v3');
-  console.log('[MessageProcessor] Input message:', JSON.stringify(messageBody));
+  console.log('[MessageProcessor] ========================================');
+  console.log('[MessageProcessor] === SUMMARIZATION START (v4) ===');
+  console.log('[MessageProcessor] ========================================');
+  console.log('[MessageProcessor] CURRENT MESSAGE TO ANALYZE:', JSON.stringify(messageBody));
+  console.log('[MessageProcessor] History length:', history.length, 'chars');
+  console.log('[MessageProcessor] First 200 chars of history:', history.substring(0, 200));
   
   const result = await chatJSON(prompt);
   
@@ -356,29 +359,35 @@ async function getMessageContext(message) {
   }
 
   // Get conversation history - SCOPED TO BOOKING (like Airbnb)
+  // CRITICAL: Exclude the CURRENT message (message.id) from history!
   let history = '[]';
   const phone = message.from_number;
+  const currentMessageId = message.id;
+  
+  console.log(`[Context] Building history for message ${currentMessageId}, excluding it from results`);
+  
   if (phone) {
     let messages;
     
     if (bookingId) {
       // If we have a booking, only get messages for THIS booking
+      // EXCLUDE the current message by ID to prevent processing old actions
       messages = await db.prepare(`
-        SELECT body, message_type, requestor_role, created_at
+        SELECT body, message_type, requestor_role, created_at, id
         FROM messages
-        WHERE booking_id = ?
+        WHERE booking_id = ? AND id != ?
         ORDER BY created_at DESC
         LIMIT 20
-      `).all(bookingId);
+      `).all(bookingId, currentMessageId);
     } else {
       // Fallback: get recent messages by phone (for unknown guests)
       messages = await db.prepare(`
-        SELECT body, message_type, requestor_role, created_at
+        SELECT body, message_type, requestor_role, created_at, id
         FROM messages
-        WHERE (from_number = ? OR to_number = ?) AND booking_id IS NULL
+        WHERE (from_number = ? OR to_number = ?) AND booking_id IS NULL AND id != ?
         ORDER BY created_at DESC
         LIMIT 20
-      `).all(phone, phone);
+      `).all(phone, phone, currentMessageId);
     }
 
     if (messages && messages.length) {
@@ -388,6 +397,9 @@ async function getMessageContext(message) {
         return `${role} - ${direction} - ${m.body}`;
       });
       history = JSON.stringify(historyArr);
+      console.log(`[Context] History has ${messages.length} messages (excluding current)`);
+    } else {
+      console.log(`[Context] No history found (this is the first message)`);
     }
   }
 
