@@ -521,6 +521,55 @@ router.get('/diagnostics', async (req, res) => {
 });
 
 /**
+ * GET /api/tasks/ai-logs
+ * Check AI logs to debug task creation
+ */
+router.get('/ai-logs', async (req, res) => {
+  try {
+    const db = getDb();
+    const logs = await db.prepare(`
+      SELECT id, message, task_bucket, task_required, task_created, task_uuid,
+             property_id, booking_id, to_number, recipient_type, created_at
+      FROM ai_logs
+      ORDER BY created_at DESC
+      LIMIT 20
+    `).all();
+    
+    res.json({
+      count: logs.length,
+      logs,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/tasks/force-create
+ * Force task creation from pending AI logs
+ */
+router.post('/force-create', async (req, res) => {
+  try {
+    const { createTasksFromAiLogs } = await import('../services/taskManager.js');
+    console.log('[Tasks] Force creating tasks from AI logs...');
+    const created = await createTasksFromAiLogs();
+    res.json({
+      success: true,
+      created: created.length,
+      tasks: created.map(t => ({
+        id: t.id,
+        bucket: t.task_bucket,
+        staff: t.staff_name,
+        property: t.property_id,
+      })),
+    });
+  } catch (error) {
+    console.error('[Tasks] Force create error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/tasks/cleanup
  * Clean up old broken tasks from previous buggy runs
  */

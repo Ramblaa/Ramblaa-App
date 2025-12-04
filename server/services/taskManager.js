@@ -44,8 +44,41 @@ export async function createTasksFromAiLogs() {
   console.log(`[TaskManager] Processing ${logs.length} AI logs for task creation`);
 
   for (const log of logs) {
+    console.log(`[TaskManager] ========================================`);
+    console.log(`[TaskManager] Processing AI log: ${log.id}`);
+    console.log(`[TaskManager]   task_bucket: "${log.task_bucket}"`);
+    console.log(`[TaskManager]   property_id: ${log.property_id}`);
+    console.log(`[TaskManager]   booking_id: ${log.booking_id}`);
+    console.log(`[TaskManager]   to_number: ${log.to_number}`);
+    console.log(`[TaskManager] ========================================`);
+    
     if (!log.task_bucket) {
-      console.log(`[TaskManager] Skipping log ${log.id} - no task bucket`);
+      console.log(`[TaskManager] ✗ Skipping - no task bucket`);
+      continue;
+    }
+    
+    // Skip invalid buckets (hallucinated tasks)
+    const lowerBucket = log.task_bucket.toLowerCase();
+    if (lowerBucket.includes('wifi') || lowerBucket.includes('wi-fi') || 
+        lowerBucket.includes('direction') || lowerBucket.includes('taxi') ||
+        log.task_bucket === 'Other') {
+      console.log(`[TaskManager] ✗ Skipping invalid bucket: "${log.task_bucket}"`);
+      await db.prepare(`UPDATE ai_logs SET task_created = 1 WHERE id = ?`).run(log.id);
+      continue;
+    }
+    
+    // Try to find property_id if missing
+    let propertyId = log.property_id;
+    if (!propertyId && log.booking_id) {
+      const booking = await db.prepare(`SELECT property_id FROM bookings WHERE id = ?`).get(log.booking_id);
+      if (booking) {
+        propertyId = booking.property_id;
+        console.log(`[TaskManager] Found property from booking: ${propertyId}`);
+      }
+    }
+    
+    if (!propertyId) {
+      console.log(`[TaskManager] ✗ Skipping - no property_id (cannot find task definition)`);
       continue;
     }
 
@@ -54,7 +87,7 @@ export async function createTasksFromAiLogs() {
       SELECT id FROM tasks 
       WHERE phone = ? AND property_id = ? AND task_bucket = ? AND status != 'Completed'
       LIMIT 1
-    `).get(log.to_number, log.property_id, log.task_bucket);
+    `).get(log.to_number, propertyId, log.task_bucket);
 
     if (existing) {
       // Update the existing task reference
@@ -69,14 +102,14 @@ export async function createTasksFromAiLogs() {
     let taskDef = null;
     const bucket = log.task_bucket || '';
     
-    console.log(`[TaskManager] Looking for task definition: property=${log.property_id}, bucket="${bucket}"`);
+    console.log(`[TaskManager] Looking for task definition: property=${propertyId}, bucket="${bucket}"`);
     
     // Strategy 1: Exact match
     taskDef = await db.prepare(`
       SELECT * FROM task_definitions 
       WHERE property_id = ? AND LOWER(sub_category_name) = LOWER(?)
       LIMIT 1
-    `).get(log.property_id, bucket);
+    `).get(propertyId, bucket);
     
     if (!taskDef && bucket) {
       // Strategy 2: Task definition name contained in bucket (e.g., "Fresh Towels" in "Fresh Towels request")
@@ -84,7 +117,7 @@ export async function createTasksFromAiLogs() {
         SELECT * FROM task_definitions 
         WHERE property_id = ? AND LOWER(?) LIKE '%' || LOWER(sub_category_name) || '%'
         LIMIT 1
-      `).get(log.property_id, bucket);
+      `).get(propertyId, bucket);
     }
     
     if (!taskDef && bucket) {
@@ -93,7 +126,7 @@ export async function createTasksFromAiLogs() {
         SELECT * FROM task_definitions 
         WHERE property_id = ? AND LOWER(sub_category_name) LIKE '%' || LOWER(?) || '%'
         LIMIT 1
-      `).get(log.property_id, bucket);
+      `).get(propertyId, bucket);
     }
     
     if (!taskDef && bucket) {
@@ -104,7 +137,7 @@ export async function createTasksFromAiLogs() {
           SELECT * FROM task_definitions 
           WHERE property_id = ? AND LOWER(sub_category_name) LIKE LOWER(?) || '%'
           LIMIT 1
-        `).get(log.property_id, firstWord);
+        `).get(propertyId, firstWord);
       }
     }
 
@@ -112,11 +145,11 @@ export async function createTasksFromAiLogs() {
       console.log(`[TaskManager] ✓ Found task definition: "${taskDef.sub_category_name}" for bucket "${bucket}"`);
       console.log(`[TaskManager]   Staff: ${taskDef.staff_name} (${taskDef.staff_phone})`);
     } else {
-      console.log(`[TaskManager] ✗ No task definition found for bucket: "${bucket}" in property ${log.property_id}`);
+      console.log(`[TaskManager] ✗ No task definition found for bucket: "${bucket}" in property ${propertyId}`);
       // List available task definitions for debugging
       const available = await db.prepare(`
         SELECT sub_category_name FROM task_definitions WHERE property_id = ?
-      `).all(log.property_id);
+      `).all(propertyId);
       console.log(`[TaskManager]   Available definitions:`, available?.map(t => t.sub_category_name) || 'none');
     }
 
@@ -124,7 +157,7 @@ export async function createTasksFromAiLogs() {
     const taskId = uuidv4();
     const task = {
       id: taskId,
-      property_id: log.property_id,
+      property_id: propertyId,
       booking_id: log.booking_id,
       phone: log.to_number,
       guest_message: log.message || log.original_message,
