@@ -276,35 +276,40 @@ async function processActionTitle({ actionTitle, message, context, summary }) {
 
   console.log(`[MessageProcessor] Task required: ${response.taskRequired}, bucket: ${response.taskBucket}`);
 
-  // Insert into ai_logs with message_bundle_uuid for audit trail
-  await db.prepare(`
-    INSERT INTO ai_logs (
-      id, recipient_type, property_id, booking_id, to_number, message_bundle_uuid,
-      message, available_property_knowledge, property_knowledge_category,
-      task_required, task_bucket, task_request_title, urgency_indicators,
-      escalation_risk_indicators, ai_message_response, ticket_enrichment_json, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    response.id,
-    response.recipientType,
-    response.propertyId,
-    response.bookingId,
-    response.toNumber,
-    response.messageBundleId,  // UUID of original message
-    response.originalMessage,
-    response.availablePropertyKnowledge ? 1 : 0,  // INTEGER in schema
-    response.propertyKnowledgeCategory,
-    response.taskRequired ? 1 : 0,  // INTEGER in schema
-    response.taskBucket,
-    response.taskRequestTitle,
-    response.urgencyIndicators,
-    response.escalationRiskIndicators,
-    response.aiResponse,
-    response.ticketEnrichmentJson,
-    response.status
-  );
-
-  console.log(`[MessageProcessor] Inserted ai_log ${response.id}`);
+  // Insert into ai_logs with message_bundle_id for audit trail
+  // CRITICAL: Column names must match schema exactly!
+  try {
+    await db.prepare(`
+      INSERT INTO ai_logs (
+        id, recipient_type, property_id, booking_id, to_number, message_bundle_id,
+        original_message, available_property_knowledge, property_knowledge_category,
+        task_required, task_bucket, task_request_title, urgency_indicators,
+        escalation_risk_indicators, ai_message_response, ticket_enrichment_json, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      response.id,
+      response.recipientType,
+      response.propertyId,
+      response.bookingId,
+      response.toNumber,
+      response.messageBundleId,  // UUID of original message
+      response.originalMessage,
+      response.availablePropertyKnowledge ? 1 : 0,  // INTEGER in schema
+      response.propertyKnowledgeCategory,
+      response.taskRequired ? 1 : 0,  // INTEGER in schema
+      response.taskBucket,
+      response.taskRequestTitle,
+      response.urgencyIndicators,
+      response.escalationRiskIndicators,
+      response.aiResponse,
+      response.ticketEnrichmentJson,
+      response.status
+    );
+    console.log(`[MessageProcessor] ✓ Inserted ai_log ${response.id}`);
+  } catch (insertError) {
+    console.error(`[MessageProcessor] ✗ Failed to insert ai_log:`, insertError.message);
+    throw insertError;
+  }
 
   return response;
 }

@@ -77,9 +77,9 @@ export async function createTasksFromAiLogs() {
       }
     }
     
+    // NOTE: Don't skip if no property_id - still create task (just without staff)
     if (!propertyId) {
-      console.log(`[TaskManager] ✗ Skipping - no property_id (cannot find task definition)`);
-      continue;
+      console.log(`[TaskManager] ⚠ No property_id found - task will be created without staff assignment`);
     }
 
     // Check for existing open task with same bucket
