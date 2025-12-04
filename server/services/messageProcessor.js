@@ -359,19 +359,24 @@ async function getMessageContext(message) {
   }
 
   // Get conversation history - SCOPED TO BOOKING (like Airbnb)
+  // Each booking = fresh conversation. New booking = no history from old bookings.
   // CRITICAL: Exclude the CURRENT message (message.id) from history!
   let history = '[]';
   const phone = message.from_number;
   const currentMessageId = message.id;
   
-  console.log(`[Context] Building history for message ${currentMessageId}, excluding it from results`);
+  console.log(`[Context] ========================================`);
+  console.log(`[Context] BUILDING HISTORY FOR BOOKING: ${bookingId || 'NO BOOKING'}`);
+  console.log(`[Context] Current message ID: ${currentMessageId}`);
+  console.log(`[Context] ========================================`);
   
   if (phone) {
     let messages;
     
     if (bookingId) {
-      // If we have a booking, only get messages for THIS booking
-      // EXCLUDE the current message by ID to prevent processing old actions
+      // BOOKING-SCOPED HISTORY: Only messages from THIS specific booking
+      // This ensures a new booking = fresh start with no old booking history
+      console.log(`[Context] Fetching history ONLY for booking: ${bookingId}`);
       messages = await db.prepare(`
         SELECT body, message_type, requestor_role, created_at, id
         FROM messages
@@ -380,7 +385,8 @@ async function getMessageContext(message) {
         LIMIT 20
       `).all(bookingId, currentMessageId);
     } else {
-      // Fallback: get recent messages by phone (for unknown guests)
+      // NO BOOKING: Fallback to phone-based history (only messages with no booking)
+      console.log(`[Context] No booking found - using phone-only history (no booking_id)`);
       messages = await db.prepare(`
         SELECT body, message_type, requestor_role, created_at, id
         FROM messages
@@ -397,9 +403,10 @@ async function getMessageContext(message) {
         return `${role} - ${direction} - ${m.body}`;
       });
       history = JSON.stringify(historyArr);
-      console.log(`[Context] History has ${messages.length} messages (excluding current)`);
+      console.log(`[Context] Found ${messages.length} history messages for this booking`);
+      console.log(`[Context] History preview:`, historyArr.slice(-2)); // Show last 2 messages
     } else {
-      console.log(`[Context] No history found (this is the first message)`);
+      console.log(`[Context] No history found - this is the FIRST message for this booking`);
     }
   }
 
