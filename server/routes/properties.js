@@ -330,6 +330,69 @@ router.post('/:id/faqs', async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/properties/:id/faqs/:faqId
+ * Update an FAQ
+ */
+router.put('/:id/faqs/:faqId', async (req, res) => {
+  try {
+    const { id: propertyId, faqId } = req.params;
+    const { subCategory, description, details } = req.body;
+    const db = getDb();
+
+    const existing = await db.prepare('SELECT * FROM faqs WHERE id = ? AND property_id = ?').get(faqId, propertyId);
+    if (!existing) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    await db.prepare(`
+      UPDATE faqs 
+      SET sub_category_name = ?, description = ?, details_json = ?
+      WHERE id = ?
+    `).run(
+      subCategory || existing.sub_category_name,
+      description !== undefined ? description : existing.description,
+      details ? JSON.stringify(details) : existing.details_json,
+      faqId
+    );
+
+    const updated = await db.prepare('SELECT * FROM faqs WHERE id = ?').get(faqId);
+    res.json({
+      id: updated.id,
+      propertyId: updated.property_id,
+      subCategory: updated.sub_category_name,
+      description: updated.description,
+      details: updated.details_json ? JSON.parse(updated.details_json) : {},
+      createdAt: updated.created_at,
+    });
+  } catch (error) {
+    console.error('[FAQs] Update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/properties/:id/faqs/:faqId
+ * Delete an FAQ
+ */
+router.delete('/:id/faqs/:faqId', async (req, res) => {
+  try {
+    const { id: propertyId, faqId } = req.params;
+    const db = getDb();
+
+    const existing = await db.prepare('SELECT * FROM faqs WHERE id = ? AND property_id = ?').get(faqId, propertyId);
+    if (!existing) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    await db.prepare('DELETE FROM faqs WHERE id = ?').run(faqId);
+    res.json({ success: true, id: faqId });
+  } catch (error) {
+    console.error('[FAQs] Delete error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================================================
 // STAFF
 // ============================================================================
@@ -477,6 +540,94 @@ router.post('/:id/task-definitions', async (req, res) => {
     res.status(201).json(taskDef || { message: 'Task definition created' });
   } catch (error) {
     console.error('[TaskDefs] Create error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/properties/:id/task-definitions/:taskDefId
+ * Update a task definition
+ */
+router.put('/:id/task-definitions/:taskDefId', async (req, res) => {
+  try {
+    const { id: propertyId, taskDefId } = req.params;
+    const { subCategory, description, primaryCategory, hostEscalation, staffRequirements, guestRequirements, staffId, staffName, staffPhone } = req.body;
+    const db = getDb();
+
+    const existing = await db.prepare('SELECT * FROM task_definitions WHERE id = ? AND property_id = ?').get(taskDefId, propertyId);
+    if (!existing) {
+      return res.status(404).json({ error: 'Task definition not found' });
+    }
+
+    // Merge existing details with updates
+    const existingDetails = existing.details_json ? JSON.parse(existing.details_json) : {};
+    const detailsObj = {
+      ...existingDetails,
+      description: description !== undefined ? description : existingDetails.description,
+      primaryCategory: primaryCategory || existingDetails.primaryCategory || 'Other',
+    };
+
+    await db.prepare(`
+      UPDATE task_definitions 
+      SET sub_category_name = ?, 
+          host_escalation = ?, 
+          staff_requirements = ?, 
+          guest_requirements = ?,
+          staff_id = ?,
+          staff_name = ?,
+          staff_phone = ?,
+          details_json = ?
+      WHERE id = ?
+    `).run(
+      subCategory || existing.sub_category_name,
+      hostEscalation !== undefined ? hostEscalation : existing.host_escalation,
+      staffRequirements !== undefined ? staffRequirements : existing.staff_requirements,
+      guestRequirements !== undefined ? guestRequirements : existing.guest_requirements,
+      staffId !== undefined ? staffId : existing.staff_id,
+      staffName !== undefined ? staffName : existing.staff_name,
+      staffPhone !== undefined ? staffPhone : existing.staff_phone,
+      JSON.stringify(detailsObj),
+      taskDefId
+    );
+
+    const updated = await db.prepare('SELECT * FROM task_definitions WHERE id = ?').get(taskDefId);
+    res.json({
+      id: updated.id,
+      propertyId: updated.property_id,
+      subCategory: updated.sub_category_name,
+      hostEscalation: updated.host_escalation,
+      staffRequirements: updated.staff_requirements,
+      guestRequirements: updated.guest_requirements,
+      staffId: updated.staff_id,
+      staffName: updated.staff_name,
+      staffPhone: updated.staff_phone,
+      details: updated.details_json ? JSON.parse(updated.details_json) : {},
+      createdAt: updated.created_at,
+    });
+  } catch (error) {
+    console.error('[TaskDefs] Update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/properties/:id/task-definitions/:taskDefId
+ * Delete a task definition
+ */
+router.delete('/:id/task-definitions/:taskDefId', async (req, res) => {
+  try {
+    const { id: propertyId, taskDefId } = req.params;
+    const db = getDb();
+
+    const existing = await db.prepare('SELECT * FROM task_definitions WHERE id = ? AND property_id = ?').get(taskDefId, propertyId);
+    if (!existing) {
+      return res.status(404).json({ error: 'Task definition not found' });
+    }
+
+    await db.prepare('DELETE FROM task_definitions WHERE id = ?').run(taskDefId);
+    res.json({ success: true, id: taskDefId });
+  } catch (error) {
+    console.error('[TaskDefs] Delete error:', error);
     res.status(500).json({ error: error.message });
   }
 });

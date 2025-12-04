@@ -89,8 +89,9 @@ function FAQsPanel() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [newFaq, setNewFaq] = useState({ subCategory: '', description: '' })
+  const [showModal, setShowModal] = useState(false)
+  const [editingFaq, setEditingFaq] = useState(null)
+  const [formData, setFormData] = useState({ subCategory: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [properties, setProperties] = useState([])
   const [selectedProperty, setSelectedProperty] = useState('')
@@ -107,10 +108,8 @@ function FAQsPanel() {
 
   const loadProperties = async () => {
     try {
-      console.log('[Resources] Loading properties from:', `${API_BASE_URL}/properties`)
       const response = await fetch(`${API_BASE_URL}/properties`)
       const data = await response.json()
-      console.log('[Resources] Properties loaded:', data.length)
       setProperties(data)
       if (data.length > 0) {
         setSelectedProperty(data[0].id)
@@ -123,10 +122,8 @@ function FAQsPanel() {
   const loadFAQs = async () => {
     try {
       setLoading(true)
-      console.log('[Resources] Loading FAQs for property:', selectedProperty)
       const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/faqs`)
       const data = await response.json()
-      console.log('[Resources] FAQs loaded:', data.length)
       setFaqs(data)
       setError(null)
     } catch (err) {
@@ -137,30 +134,80 @@ function FAQsPanel() {
     }
   }
 
-  const handleAddFAQ = async () => {
-    if (!newFaq.subCategory.trim()) return
+  const openAddModal = () => {
+    setEditingFaq(null)
+    setFormData({ subCategory: '', description: '' })
+    setShowModal(true)
+  }
+
+  const openEditModal = (faq) => {
+    setEditingFaq(faq)
+    setFormData({ 
+      subCategory: faq.subCategory || '', 
+      description: faq.description || '' 
+    })
+    setShowModal(true)
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
+    setEditingFaq(null)
+    setFormData({ subCategory: '', description: '' })
+  }
+
+  const handleSave = async () => {
+    if (!formData.subCategory.trim()) return
     
     try {
       setSaving(true)
-      const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/faqs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subCategory: newFaq.subCategory.trim(),
-          description: newFaq.description.trim() || null
-        })
-      })
       
-      if (response.ok) {
-        await loadFAQs()
-        setShowAddModal(false)
-        setNewFaq({ subCategory: '', description: '' })
+      if (editingFaq) {
+        // Update existing FAQ
+        const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/faqs/${editingFaq.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subCategory: formData.subCategory.trim(),
+            description: formData.description.trim() || null
+          })
+        })
+        if (!response.ok) throw new Error('Failed to update')
+      } else {
+        // Create new FAQ
+        const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/faqs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subCategory: formData.subCategory.trim(),
+            description: formData.description.trim() || null
+          })
+        })
+        if (!response.ok) throw new Error('Failed to create')
       }
+      
+      await loadFAQs()
+      closeModal()
     } catch (err) {
-      console.error('Error adding FAQ:', err)
-      setError('Failed to add FAQ')
+      console.error('Error saving FAQ:', err)
+      setError('Failed to save FAQ')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async (faq) => {
+    if (!confirm(`Delete FAQ "${faq.subCategory}"?`)) return
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/faqs/${faq.id}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        await loadFAQs()
+      }
+    } catch (err) {
+      console.error('Error deleting FAQ:', err)
+      setError('Failed to delete FAQ')
     }
   }
 
@@ -196,7 +243,7 @@ function FAQsPanel() {
             ))}
           </select>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
+        <Button onClick={openAddModal}>
           <Plus className="mr-2 h-4 w-4" />
           Add FAQ
         </Button>
@@ -244,10 +291,20 @@ function FAQsPanel() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => openEditModal(faq)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-red-500 hover:text-red-600">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                      onClick={() => handleDelete(faq)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -258,16 +315,18 @@ function FAQsPanel() {
         </div>
       )}
 
-      {/* Add FAQ Modal */}
-      {showAddModal && (
+      {/* Add/Edit FAQ Modal */}
+      {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-brand-dark">Add New FAQ</h2>
+              <h2 className="text-lg font-semibold text-brand-dark">
+                {editingFaq ? 'Edit FAQ' : 'Add New FAQ'}
+              </h2>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setShowAddModal(false)}
+                onClick={closeModal}
                 className="h-8 w-8 p-0"
               >
                 <X className="h-4 w-4" />
@@ -278,8 +337,8 @@ function FAQsPanel() {
               <div>
                 <Label className="text-sm font-medium">Category/Topic *</Label>
                 <Input
-                  value={newFaq.subCategory}
-                  onChange={(e) => setNewFaq({ ...newFaq, subCategory: e.target.value })}
+                  value={formData.subCategory}
+                  onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
                   placeholder="e.g., WiFi, Check-in, Pool Hours..."
                   className="mt-1"
                 />
@@ -288,8 +347,8 @@ function FAQsPanel() {
               <div>
                 <Label className="text-sm font-medium">Description/Answer</Label>
                 <textarea
-                  value={newFaq.description}
-                  onChange={(e) => setNewFaq({ ...newFaq, description: e.target.value })}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Enter the FAQ answer..."
                   className="mt-1 w-full h-24 px-3 py-2 border rounded-md text-sm resize-y"
                 />
@@ -297,14 +356,14 @@ function FAQsPanel() {
               
               <div className="flex gap-2 pt-4">
                 <Button 
-                  onClick={handleAddFAQ}
-                  disabled={saving || !newFaq.subCategory.trim()}
+                  onClick={handleSave}
+                  disabled={saving || !formData.subCategory.trim()}
                   className="flex-1"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {saving ? 'Adding...' : 'Add FAQ'}
+                  {saving ? 'Saving...' : (editingFaq ? 'Update FAQ' : 'Add FAQ')}
                 </Button>
-                <Button variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
+                <Button variant="outline" onClick={closeModal} className="flex-1">
                   Cancel
                 </Button>
               </div>
@@ -325,8 +384,9 @@ function TaskDefinitionsPanel() {
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [newTaskDef, setNewTaskDef] = useState({
+  const [showModal, setShowModal] = useState(false)
+  const [editingTaskDef, setEditingTaskDef] = useState(null)
+  const [formData, setFormData] = useState({
     subCategory: '',
     primaryCategory: 'Housekeeping',
     description: '',
@@ -354,10 +414,8 @@ function TaskDefinitionsPanel() {
 
   const loadProperties = async () => {
     try {
-      console.log('[Resources] Loading properties for task defs')
       const response = await fetch(`${API_BASE_URL}/properties`)
       const data = await response.json()
-      console.log('[Resources] Properties loaded:', data.length)
       setProperties(data)
       if (data.length > 0) {
         setSelectedProperty(data[0].id)
@@ -370,10 +428,8 @@ function TaskDefinitionsPanel() {
   const loadTaskDefs = async () => {
     try {
       setLoading(true)
-      console.log('[Resources] Loading task definitions for property:', selectedProperty)
       const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/task-definitions`)
       const data = await response.json()
-      console.log('[Resources] Task definitions loaded:', data.length)
       setTaskDefs(data)
       setError(null)
     } catch (err) {
@@ -386,28 +442,74 @@ function TaskDefinitionsPanel() {
 
   const loadStaff = async () => {
     try {
-      console.log('[Resources] Loading staff for property:', selectedProperty)
       const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/staff`)
       const data = await response.json()
-      console.log('[Resources] Staff loaded:', data.length)
       setStaff(data)
     } catch (err) {
       console.error('Error loading staff:', err)
     }
   }
 
+  const openAddModal = () => {
+    setEditingTaskDef(null)
+    setFormData({
+      subCategory: '',
+      primaryCategory: 'Housekeeping',
+      description: '',
+      staffRequirements: '',
+      guestRequirements: '',
+      hostEscalation: '',
+      staffId: '',
+      staffName: '',
+      staffPhone: ''
+    })
+    setShowModal(true)
+  }
+
+  const openEditModal = (taskDef) => {
+    setEditingTaskDef(taskDef)
+    setFormData({
+      subCategory: taskDef.subCategory || '',
+      primaryCategory: taskDef.details?.primaryCategory || 'Housekeeping',
+      description: taskDef.details?.description || '',
+      staffRequirements: taskDef.staffRequirements || '',
+      guestRequirements: taskDef.guestRequirements || '',
+      hostEscalation: taskDef.hostEscalation || '',
+      staffId: taskDef.staffId || '',
+      staffName: taskDef.staffName || '',
+      staffPhone: taskDef.staffPhone || ''
+    })
+    setShowModal(true)
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
+    setEditingTaskDef(null)
+    setFormData({
+      subCategory: '',
+      primaryCategory: 'Housekeeping',
+      description: '',
+      staffRequirements: '',
+      guestRequirements: '',
+      hostEscalation: '',
+      staffId: '',
+      staffName: '',
+      staffPhone: ''
+    })
+  }
+
   const handleStaffSelect = (staffId) => {
     const selectedStaff = staff.find(s => s.id === staffId)
     if (selectedStaff) {
-      setNewTaskDef({
-        ...newTaskDef,
+      setFormData({
+        ...formData,
         staffId: selectedStaff.id,
         staffName: selectedStaff.name,
         staffPhone: selectedStaff.phone
       })
     } else {
-      setNewTaskDef({
-        ...newTaskDef,
+      setFormData({
+        ...formData,
         staffId: '',
         staffName: '',
         staffPhone: ''
@@ -415,49 +517,64 @@ function TaskDefinitionsPanel() {
     }
   }
 
-  const handleAddTaskDef = async () => {
-    if (!newTaskDef.subCategory.trim()) return
+  const handleSave = async () => {
+    if (!formData.subCategory.trim()) return
     
     try {
       setSaving(true)
-      console.log('[Resources] Creating task definition:', newTaskDef.subCategory)
-      const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/task-definitions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subCategory: newTaskDef.subCategory.trim(),
-          primaryCategory: newTaskDef.primaryCategory,
-          description: newTaskDef.description.trim() || null,
-          staffRequirements: newTaskDef.staffRequirements.trim() || null,
-          guestRequirements: newTaskDef.guestRequirements.trim() || null,
-          hostEscalation: newTaskDef.hostEscalation.trim() || null,
-          staffId: newTaskDef.staffId || null,
-          staffName: newTaskDef.staffName || null,
-          staffPhone: newTaskDef.staffPhone || null
-        })
-      })
-      
-      if (response.ok) {
-        console.log('[Resources] Task definition created successfully')
-        await loadTaskDefs()
-        setShowAddModal(false)
-        setNewTaskDef({
-          subCategory: '',
-          primaryCategory: 'Housekeeping',
-          description: '',
-          staffRequirements: '',
-          guestRequirements: '',
-          hostEscalation: '',
-          staffId: '',
-          staffName: '',
-          staffPhone: ''
-        })
+      const payload = {
+        subCategory: formData.subCategory.trim(),
+        primaryCategory: formData.primaryCategory,
+        description: formData.description.trim() || null,
+        staffRequirements: formData.staffRequirements.trim() || null,
+        guestRequirements: formData.guestRequirements.trim() || null,
+        hostEscalation: formData.hostEscalation.trim() || null,
+        staffId: formData.staffId || null,
+        staffName: formData.staffName || null,
+        staffPhone: formData.staffPhone || null
       }
+      
+      if (editingTaskDef) {
+        // Update existing
+        const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/task-definitions/${editingTaskDef.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        if (!response.ok) throw new Error('Failed to update')
+      } else {
+        // Create new
+        const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/task-definitions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        if (!response.ok) throw new Error('Failed to create')
+      }
+      
+      await loadTaskDefs()
+      closeModal()
     } catch (err) {
-      console.error('Error adding task definition:', err)
-      setError('Failed to add task definition')
+      console.error('Error saving task definition:', err)
+      setError('Failed to save task definition')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async (taskDef) => {
+    if (!confirm(`Delete task definition "${taskDef.subCategory}"?`)) return
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/properties/${selectedProperty}/task-definitions/${taskDef.id}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        await loadTaskDefs()
+      }
+    } catch (err) {
+      console.error('Error deleting task definition:', err)
+      setError('Failed to delete task definition')
     }
   }
 
@@ -486,7 +603,7 @@ function TaskDefinitionsPanel() {
             ))}
           </select>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
+        <Button onClick={openAddModal}>
           <Plus className="mr-2 h-4 w-4" />
           Add Task Definition
         </Button>
@@ -572,10 +689,20 @@ function TaskDefinitionsPanel() {
                   </div>
 
                   <div className="flex gap-2 lg:flex-col">
-                    <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => openEditModal(taskDef)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-red-500 hover:text-red-600">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                      onClick={() => handleDelete(taskDef)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -586,16 +713,18 @@ function TaskDefinitionsPanel() {
         </div>
       )}
 
-      {/* Add Task Definition Modal */}
-      {showAddModal && (
+      {/* Add/Edit Task Definition Modal */}
+      {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-brand-dark">Add Task Definition</h2>
+              <h2 className="text-lg font-semibold text-brand-dark">
+                {editingTaskDef ? 'Edit Task Definition' : 'Add Task Definition'}
+              </h2>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setShowAddModal(false)}
+                onClick={closeModal}
                 className="h-8 w-8 p-0"
               >
                 <X className="h-4 w-4" />
@@ -607,8 +736,8 @@ function TaskDefinitionsPanel() {
                 <div>
                   <Label className="text-sm font-medium">Task Category *</Label>
                   <Input
-                    value={newTaskDef.subCategory}
-                    onChange={(e) => setNewTaskDef({ ...newTaskDef, subCategory: e.target.value })}
+                    value={formData.subCategory}
+                    onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
                     placeholder="e.g., Fresh Towels"
                     className="mt-1"
                   />
@@ -616,8 +745,8 @@ function TaskDefinitionsPanel() {
                 <div>
                   <Label className="text-sm font-medium">Primary Category</Label>
                   <select
-                    value={newTaskDef.primaryCategory}
-                    onChange={(e) => setNewTaskDef({ ...newTaskDef, primaryCategory: e.target.value })}
+                    value={formData.primaryCategory}
+                    onChange={(e) => setFormData({ ...formData, primaryCategory: e.target.value })}
                     className="mt-1 w-full px-3 py-2 border rounded-md text-sm"
                   >
                     <option value="Housekeeping">Housekeeping</option>
@@ -632,8 +761,8 @@ function TaskDefinitionsPanel() {
               <div>
                 <Label className="text-sm font-medium">Description</Label>
                 <textarea
-                  value={newTaskDef.description}
-                  onChange={(e) => setNewTaskDef({ ...newTaskDef, description: e.target.value })}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Describe when this task is triggered..."
                   className="mt-1 w-full h-20 px-3 py-2 border rounded-md text-sm resize-y"
                 />
@@ -642,7 +771,7 @@ function TaskDefinitionsPanel() {
               <div className="border-t pt-4">
                 <Label className="text-sm font-medium mb-2 block">Assign Staff Member</Label>
                 <select
-                  value={newTaskDef.staffId}
+                  value={formData.staffId}
                   onChange={(e) => handleStaffSelect(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                 >
@@ -653,9 +782,9 @@ function TaskDefinitionsPanel() {
                     </option>
                   ))}
                 </select>
-                {newTaskDef.staffName && (
+                {formData.staffName && (
                   <p className="mt-2 text-sm text-green-600">
-                    ✓ Will notify {newTaskDef.staffName} when this task is created
+                    ✓ Will notify {formData.staffName} when this task is created
                   </p>
                 )}
               </div>
@@ -664,8 +793,8 @@ function TaskDefinitionsPanel() {
                 <div>
                   <Label className="text-sm font-medium">Staff Requirements</Label>
                   <Input
-                    value={newTaskDef.staffRequirements}
-                    onChange={(e) => setNewTaskDef({ ...newTaskDef, staffRequirements: e.target.value })}
+                    value={formData.staffRequirements}
+                    onChange={(e) => setFormData({ ...formData, staffRequirements: e.target.value })}
                     placeholder="What staff needs to confirm/do"
                     className="mt-1"
                   />
@@ -673,8 +802,8 @@ function TaskDefinitionsPanel() {
                 <div>
                   <Label className="text-sm font-medium">Guest Requirements</Label>
                   <Input
-                    value={newTaskDef.guestRequirements}
-                    onChange={(e) => setNewTaskDef({ ...newTaskDef, guestRequirements: e.target.value })}
+                    value={formData.guestRequirements}
+                    onChange={(e) => setFormData({ ...formData, guestRequirements: e.target.value })}
                     placeholder="What info is needed from guest"
                     className="mt-1"
                   />
@@ -682,8 +811,8 @@ function TaskDefinitionsPanel() {
                 <div>
                   <Label className="text-sm font-medium">Host Escalation Criteria</Label>
                   <Input
-                    value={newTaskDef.hostEscalation}
-                    onChange={(e) => setNewTaskDef({ ...newTaskDef, hostEscalation: e.target.value })}
+                    value={formData.hostEscalation}
+                    onChange={(e) => setFormData({ ...formData, hostEscalation: e.target.value })}
                     placeholder="When to escalate to host"
                     className="mt-1"
                   />
@@ -692,14 +821,14 @@ function TaskDefinitionsPanel() {
               
               <div className="flex gap-2 pt-4 border-t">
                 <Button 
-                  onClick={handleAddTaskDef}
-                  disabled={saving || !newTaskDef.subCategory.trim()}
+                  onClick={handleSave}
+                  disabled={saving || !formData.subCategory.trim()}
                   className="flex-1"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {saving ? 'Adding...' : 'Add Task Definition'}
+                  {saving ? 'Saving...' : (editingTaskDef ? 'Update' : 'Add Task Definition')}
                 </Button>
-                <Button variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
+                <Button variant="outline" onClick={closeModal} className="flex-1">
                   Cancel
                 </Button>
               </div>
@@ -710,4 +839,3 @@ function TaskDefinitionsPanel() {
     </div>
   )
 }
-
