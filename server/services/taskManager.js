@@ -720,13 +720,42 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
   // Find active tasks for this staff member or property
   let tasks = [];
   
-  if (role === 'Staff' && staffId) {
-    // Find tasks assigned to this staff member
-    tasks = await db.prepare(`
-      SELECT * FROM tasks 
-      WHERE staff_id = ? AND status NOT IN ('Completed', 'Archived', 'Cancelled')
-      ORDER BY created_at DESC
-    `).all(staffId);
+  // Normalize phone number for comparison
+  const normalizedPhone = from.replace(/^whatsapp:/i, '').replace(/[^\d+]/g, '');
+  const phoneLast10 = normalizedPhone.slice(-10);
+  
+  console.log(`[TaskManager] Looking for tasks - role: ${role}, staffId: ${staffId}, phone: ${normalizedPhone}`);
+  
+  if (role === 'Staff') {
+    // Strategy 1: Find by staff_id
+    if (staffId) {
+      tasks = await db.prepare(`
+        SELECT * FROM tasks 
+        WHERE staff_id = ? AND status NOT IN ('Completed', 'Archived', 'Cancelled')
+        ORDER BY created_at DESC
+      `).all(staffId);
+      console.log(`[TaskManager] Found ${tasks.length} tasks by staff_id`);
+    }
+    
+    // Strategy 2: Find by staff_phone (more reliable)
+    if (!tasks.length) {
+      tasks = await db.prepare(`
+        SELECT * FROM tasks 
+        WHERE staff_phone LIKE ? AND status NOT IN ('Completed', 'Archived', 'Cancelled')
+        ORDER BY created_at DESC
+      `).all(`%${phoneLast10}%`);
+      console.log(`[TaskManager] Found ${tasks.length} tasks by staff_phone`);
+    }
+    
+    // Strategy 3: Find any active task waiting on staff
+    if (!tasks.length && propertyId) {
+      tasks = await db.prepare(`
+        SELECT * FROM tasks 
+        WHERE property_id = ? AND status = 'Waiting on Staff'
+        ORDER BY created_at DESC
+      `).all(propertyId);
+      console.log(`[TaskManager] Found ${tasks.length} tasks by property waiting on staff`);
+    }
   } else if (role === 'Host' && propertyId) {
     // Find tasks escalated to host for this property
     tasks = await db.prepare(`
@@ -734,22 +763,25 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
       WHERE property_id = ? AND status = 'Waiting on Host'
       ORDER BY created_at DESC
     `).all(propertyId);
+    console.log(`[TaskManager] Found ${tasks.length} tasks waiting on host`);
   }
 
   if (!tasks.length) {
-    // No active tasks - just log it
-    console.log(`[TaskManager] No active tasks found for ${role} ${from}`);
+    // No active tasks - try to find most recent task
+    console.log(`[TaskManager] No active tasks found, checking recent tasks...`);
     
-    // Try to find most recent task for this property/staff
     const recentTask = await db.prepare(`
       SELECT * FROM tasks 
-      WHERE (staff_id = ? OR property_id = ?) AND status != 'Archived'
+      WHERE (staff_phone LIKE ? OR staff_id = ? OR property_id = ?) 
+        AND status NOT IN ('Completed', 'Archived', 'Cancelled')
       ORDER BY created_at DESC LIMIT 1
-    `).get(staffId || '', propertyId || '');
+    `).get(`%${phoneLast10}%`, staffId || '', propertyId || '');
     
     if (recentTask) {
       tasks = [recentTask];
-      console.log(`[TaskManager] Found recent task ${recentTask.id} to associate response with`);
+      console.log(`[TaskManager] Found recent task ${recentTask.id} (${recentTask.task_bucket}) to associate response with`);
+    } else {
+      console.log(`[TaskManager] No tasks found at all for this responder`);
     }
   }
 
@@ -765,24 +797,58 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
     let notifyGuest = false;
     let guestMessage = '';
 
-    // Simple keyword detection for status updates
+    // Keyword and pattern detection for status updates
     const lowerBody = body.toLowerCase();
     
+    // Check for completion
     if (lowerBody.includes('done') || lowerBody.includes('completed') || lowerBody.includes('delivered') || lowerBody.includes('finished')) {
       newStatus = 'Completed';
       notifyGuest = true;
       guestMessage = `Good news! Your request for "${task.task_bucket || task.action_title}" has been completed. Is there anything else we can help you with?`;
-    } else if (lowerBody.includes('on my way') || lowerBody.includes('coming') || lowerBody.includes('will be there')) {
+    } 
+    // Check for "on my way" type messages
+    else if (lowerBody.includes('on my way') || lowerBody.includes('coming') || lowerBody.includes('will be there')) {
       newStatus = 'In Progress';
       notifyGuest = true;
       guestMessage = `Update: Our team is on their way to help with your "${task.task_bucket || task.action_title}" request.`;
-    } else if (lowerBody.includes('delay') || lowerBody.includes('later') || lowerBody.includes('busy')) {
+    } 
+    // Check for scheduling confirmation (time patterns like "8:30am", "tomorrow", "at 9")
+    else if (
+      lowerBody.match(/\d{1,2}:\d{2}\s*(am|pm)?/i) ||  // Time pattern like "8:30am"
+      lowerBody.match(/at\s+\d{1,2}/i) ||  // "at 8", "at 9am"
+      lowerBody.includes('tomorrow') ||
+      lowerBody.includes('morning') ||
+      lowerBody.includes('afternoon') ||
+      lowerBody.includes('evening') ||
+      (lowerBody.includes('will') && (lowerBody.includes('bring') || lowerBody.includes('deliver') || lowerBody.includes('come'))) ||
+      lowerBody.includes('okay') || lowerBody.includes('sure') || lowerBody.includes('yes')
+    ) {
+      newStatus = 'Scheduled';
+      notifyGuest = true;
+      // Extract time info from the message for the guest notification
+      const taskName = task.task_bucket || task.action_title || 'your request';
+      guestMessage = `Great news! Your "${taskName}" has been scheduled. Staff confirmed: "${body}". We'll let you know once it's completed.`;
+    }
+    // Check for delays
+    else if (lowerBody.includes('delay') || lowerBody.includes('later') || lowerBody.includes('busy')) {
       newStatus = 'In Progress';
       notifyGuest = true;
       guestMessage = `Update: There may be a short delay with your "${task.task_bucket || task.action_title}" request. We'll get to you as soon as possible.`;
-    } else if (lowerBody.includes('cannot') || lowerBody.includes("can't") || lowerBody.includes('unable') || lowerBody.includes('no stock')) {
+    } 
+    // Check for inability to complete
+    else if (lowerBody.includes('cannot') || lowerBody.includes("can't") || lowerBody.includes('unable') || lowerBody.includes('no stock')) {
       newStatus = 'Escalated';
       // May need host intervention
+    }
+    // Default: Any staff response should update the task to "In Progress"
+    else {
+      newStatus = task.status === 'Waiting on Staff' ? 'In Progress' : task.status;
+      console.log(`[TaskManager] No specific pattern matched, keeping status: ${newStatus}`);
+    }
+    
+    console.log(`[TaskManager] Status update: ${task.status} -> ${newStatus}, notifyGuest: ${notifyGuest}`);
+    if (notifyGuest) {
+      console.log(`[TaskManager] Guest message: "${guestMessage?.substring(0, 100)}..."`);
     }
 
     // Update task
