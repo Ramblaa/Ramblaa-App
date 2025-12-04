@@ -13,6 +13,7 @@ export default function MessagesPage() {
   const navigate = useNavigate()
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
+  const [conversationMeta, setConversationMeta] = useState({}) // Loaded metadata from API
   const [conversationMessages, setConversationMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -21,17 +22,33 @@ export default function MessagesPage() {
   const [error, setError] = useState(null)
   const [conversationStates, setConversationStates] = useState({})
 
+  // Get display data - prefer loaded meta, fall back to selected conversation
+  const displayData = {
+    guestName: conversationMeta.guestName || selectedConversation?.guestName || formatPhoneForDisplay(selectedConversation?.phone),
+    property: conversationMeta.property || selectedConversation?.property || 'Unknown Property',
+    phone: conversationMeta.phone || selectedConversation?.phone || '',
+    propertyId: conversationMeta.propertyId || selectedConversation?.propertyId,
+    bookingId: conversationMeta.bookingId || selectedConversation?.bookingId,
+  }
+
+  // Format phone for display
+  function formatPhoneForDisplay(phone) {
+    if (!phone) return 'Unknown'
+    return phone.replace('whatsapp:', '').replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+  }
+
   // Load conversations on mount
   useEffect(() => {
     loadConversations()
   }, [])
 
-  // Load messages when conversation is selected
+  // Load messages when conversation is selected - use ID (bookingId or phone) as stable key
   useEffect(() => {
-    if (selectedConversation?.phone) {
-      loadConversationMessages(selectedConversation.phone)
+    const conversationId = selectedConversation?.bookingId || selectedConversation?.id
+    if (conversationId) {
+      loadConversationMessages(conversationId)
     }
-  }, [selectedConversation?.phone])
+  }, [selectedConversation?.id]) // Only trigger on ID change, not metadata changes
 
   async function loadConversations() {
     try {
@@ -40,10 +57,10 @@ export default function MessagesPage() {
       const data = await messagesApi.getConversations({ limit: 50 })
       setConversations(data)
       
-      // Initialize conversation states
+      // Initialize conversation states using id as key
       const states = {}
       data.forEach(conv => {
-        states[conv.phone] = { autoResponseEnabled: true }
+        states[conv.id] = { autoResponseEnabled: true }
       })
       setConversationStates(states)
     } catch (err) {
@@ -56,18 +73,18 @@ export default function MessagesPage() {
     }
   }
 
-  async function loadConversationMessages(phone) {
+  async function loadConversationMessages(conversationId) {
     try {
-      const data = await messagesApi.getConversation(phone)
+      const data = await messagesApi.getConversation(conversationId)
       setConversationMessages(data.messages || [])
-      // Update conversation metadata
-      setSelectedConversation(prev => ({
-        ...prev,
+      // Update metadata without changing the ID (prevents re-fetch loop)
+      setConversationMeta({
         guestName: data.guestName,
         property: data.property,
         propertyId: data.propertyId,
         bookingId: data.bookingId,
-      }))
+        phone: data.phone,
+      })
     } catch (err) {
       console.error('Failed to load messages:', err)
       // Keep existing messages or use mock
@@ -88,6 +105,12 @@ export default function MessagesPage() {
     return false
   })
 
+  // Reset meta when conversation changes
+  useEffect(() => {
+    setConversationMeta({})
+    setConversationMessages([])
+  }, [selectedConversation?.id])
+
   const handleSendMessage = async (e) => {
     e.preventDefault()
     if (!newMessage.trim() || !selectedConversation) return
@@ -98,17 +121,17 @@ export default function MessagesPage() {
       // When host sends a message, disable auto-response for this conversation
       setConversationStates(prev => ({
         ...prev,
-        [selectedConversation.phone]: {
-          ...prev[selectedConversation.phone],
+        [selectedConversation.id]: {
+          ...prev[selectedConversation.id],
           autoResponseEnabled: false
         }
       }))
 
       await messagesApi.sendMessage({
-        to: selectedConversation.phone,
+        to: displayData.phone,
         body: newMessage,
-        propertyId: selectedConversation.propertyId,
-        bookingId: selectedConversation.bookingId,
+        propertyId: displayData.propertyId,
+        bookingId: displayData.bookingId,
       })
 
       // Optimistically add message to UI
@@ -137,9 +160,9 @@ export default function MessagesPage() {
     
     setConversationStates(prev => ({
       ...prev,
-      [selectedConversation.phone]: {
-        ...prev[selectedConversation.phone],
-        autoResponseEnabled: !prev[selectedConversation.phone]?.autoResponseEnabled
+      [selectedConversation.id]: {
+        ...prev[selectedConversation.id],
+        autoResponseEnabled: !prev[selectedConversation.id]?.autoResponseEnabled
       }
     }))
   }
@@ -149,7 +172,7 @@ export default function MessagesPage() {
   }
 
   const isAutoResponseEnabled = selectedConversation ? 
-    conversationStates[selectedConversation.phone]?.autoResponseEnabled ?? true : 
+    conversationStates[selectedConversation.id]?.autoResponseEnabled ?? true : 
     false
 
   const getSenderBadge = (message) => {
@@ -256,11 +279,11 @@ export default function MessagesPage() {
           {filteredConversations.length > 0 ? (
             filteredConversations.map((conversation) => (
               <motion.div
-                key={conversation.phone}
+                key={conversation.id}
                 whileHover={{ backgroundColor: 'rgba(154, 23, 80, 0.05)' }}
                 className={cn(
                   "p-4 border-b cursor-pointer transition-colors",
-                  selectedConversation?.phone === conversation.phone ? "bg-brand-purple/10 border-brand-purple/20" : ""
+                  selectedConversation?.id === conversation.id ? "bg-brand-purple/10 border-brand-purple/20" : ""
                 )}
                 onClick={() => setSelectedConversation(conversation)}
               >
@@ -320,15 +343,19 @@ export default function MessagesPage() {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div className="w-10 h-10 bg-brand-vanilla text-brand-dark rounded-full flex items-center justify-center font-medium text-sm">
-                  {getInitials(selectedConversation.guestName)}
+                  {getInitials(displayData.guestName)}
                 </div>
                 <div>
-                  <h2 className="font-semibold text-brand-dark">{selectedConversation.guestName}</h2>
+                  <h2 className="font-semibold text-brand-dark">{displayData.guestName}</h2>
                   <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
                     <Phone className="h-3 w-3" />
-                    <span>{selectedConversation.phone}</span>
-                    <span>•</span>
-                    <span>{selectedConversation.property}</span>
+                    <span>{displayData.phone}</span>
+                    {displayData.property && displayData.property !== 'Unknown Property' && (
+                      <>
+                        <span>•</span>
+                        <span>{displayData.property}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
