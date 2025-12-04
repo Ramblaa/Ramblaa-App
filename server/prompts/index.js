@@ -82,33 +82,33 @@ Your output **must be a single, valid JSON object** matching the schema below �
 // MESSAGE SUMMARIZATION
 // ============================================================================
 
+// VERSION: 2024-12-04-v3 - Fixed action extraction
 export const PROMPT_SUMMARIZE_MESSAGE_ACTIONS = `
-You are extracting action items from a guest message. Your ONLY job is to identify what the guest is asking for.
+Extract actions from the guest message below. Output ONLY what the guest explicitly requested.
 
-READ THIS MESSAGE CAREFULLY:
-{{MESSAGE}}
+GUEST MESSAGE:
+"{{MESSAGE}}"
 
-Now extract what the guest ACTUALLY asked for. Return STRICT JSON:
+OUTPUT RULES:
+- Return JSON with "Action Titles" array
+- Use EXACT words from the message (e.g., "fresh towels" → "Fresh towels request")
+- Maximum 2 actions
+- Ignore greetings ("Hi", "Hello", "Hi there")
+
+FORBIDDEN - NEVER OUTPUT THESE:
+- "Request directions to villa" 
+- "Request Wi-Fi password" (unless message contains "wifi")
+- Any action not explicitly in the message
+
+Return ONLY this JSON structure:
 {
-  "Language": "<2-letter ISO code>",
-  "Tone": "<Friendly|Polite|Casual|Frustrated|Neutral>",
-  "Sentiment": "<Positive|Neutral|Negative>",
-  "Action Titles": ["<extracted action 1>", "<extracted action 2 if any>"]
+  "Language": "en",
+  "Tone": "Friendly",
+  "Sentiment": "Neutral", 
+  "Action Titles": []
 }
 
-CRITICAL - READ CAREFULLY:
-1. ONLY extract actions that appear in the message above
-2. If message says "fresh towels" → action is "Fresh towels request"
-3. If message says "wifi" or "WiFi" → action is "WiFi inquiry"
-4. If message says "check-in" → action is "Check-in inquiry"
-5. Do NOT invent actions - only extract what's in the message
-6. Maximum 3 actions per message
-7. Ignore greetings like "Hi there"
-
-DO NOT OUTPUT: "Request directions to villa", "Request directions", or any action not in the message.
-
-History (context only, do not extract from this):
-{{HISTORICAL_MESSAGES}}
+Fill "Action Titles" with 1-2 actions extracted from the message above.
 `;
 
 // ============================================================================

@@ -95,15 +95,20 @@ export async function processInboundMessage(message) {
  * Equivalent to processSummarizeMessage() from guestResponse.gs
  */
 async function summarizeMessage(messageBody, history = '[]') {
+  // NOTE: Using prompt version 2024-12-04-v3
   const prompt = fillTemplate(PROMPT_SUMMARIZE_MESSAGE_ACTIONS, {
     HISTORICAL_MESSAGES: history,
     MESSAGE: messageBody,
   });
 
-  console.log('[MessageProcessor] Calling AI for summarization...');
-  console.log('[MessageProcessor] Message to summarize:', messageBody);
+  console.log('[MessageProcessor] === SUMMARIZATION START ===');
+  console.log('[MessageProcessor] Prompt version: 2024-12-04-v3');
+  console.log('[MessageProcessor] Input message:', JSON.stringify(messageBody));
+  console.log('[MessageProcessor] Prompt (first 500 chars):', prompt.substring(0, 500));
   
   const result = await chatJSON(prompt);
+  
+  console.log('[MessageProcessor] AI raw response:', result.raw?.substring(0, 300));
   
   if (result.error || !result.json) {
     console.error('[MessageProcessor] Summarize error:', result.error);
@@ -115,26 +120,34 @@ async function summarizeMessage(messageBody, history = '[]') {
     ? data['Action Titles'].filter(Boolean) 
     : [];
   
-  console.log('[MessageProcessor] Input message:', messageBody);
-  console.log('[MessageProcessor] AI returned actions:', actionTitles.join(', '));
+  console.log('[MessageProcessor] Parsed actions:', JSON.stringify(actionTitles));
   
-  // Sanity check - warn if AI returns actions not related to the message
+  // Sanity check - REJECT hallucinated actions
   const lowerMessage = messageBody.toLowerCase();
-  for (const action of actionTitles) {
+  const validatedActions = actionTitles.filter(action => {
     const lowerAction = action.toLowerCase();
+    
+    // Reject known hallucinations
     if (lowerAction.includes('direction') && !lowerMessage.includes('direction')) {
-      console.warn('[MessageProcessor] WARNING: AI returned "directions" action but message does not mention directions!');
+      console.error('[MessageProcessor] REJECTED hallucinated action:', action);
+      return false;
     }
-    if (lowerAction.includes('wifi') && !lowerMessage.includes('wifi') && !lowerMessage.includes('wi-fi')) {
-      console.warn('[MessageProcessor] WARNING: AI returned "wifi" action but message does not mention WiFi!');
+    if ((lowerAction.includes('wifi') || lowerAction.includes('wi-fi')) && 
+        !lowerMessage.includes('wifi') && !lowerMessage.includes('wi-fi')) {
+      console.error('[MessageProcessor] REJECTED hallucinated action:', action);
+      return false;
     }
-  }
+    return true;
+  });
+  
+  console.log('[MessageProcessor] Final validated actions:', JSON.stringify(validatedActions));
+  console.log('[MessageProcessor] === SUMMARIZATION END ===');
   
   return {
     language: data.Language || 'en',
     tone: data.Tone || '',
     sentiment: data.Sentiment || '',
-    actionTitles,
+    actionTitles: validatedActions,
   };
 }
 
