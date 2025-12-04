@@ -707,6 +707,115 @@ export async function updateTask(taskId, updates) {
   return await getTaskById(taskId);
 }
 
+// ============================================================================
+// AI EVALUATION HELPERS
+// ============================================================================
+
+/**
+ * Build thread context for AI evaluation
+ */
+async function buildThreadContext(task, currentMessageId, currentBody, currentRole) {
+  const db = getDb();
+  
+  // Get all messages related to this task
+  const messages = await db.prepare(`
+    SELECT body, message_type, requestor_role, created_at
+    FROM messages
+    WHERE booking_id = ? OR from_number = ? OR to_number = ?
+    ORDER BY created_at ASC
+    LIMIT 30
+  `).all(task.booking_id || '', task.phone || '', task.phone || '');
+  
+  // Format as thread context
+  const threadLines = [];
+  for (const msg of messages || []) {
+    const date = new Date(msg.created_at).toISOString().split('T')[0];
+    const role = msg.requestor_role || (msg.message_type === 'Inbound' ? 'Guest' : 'Staff');
+    const direction = msg.message_type || 'Inbound';
+    threadLines.push(`${date} - ${role} - ${direction} - ${msg.body}`);
+  }
+  
+  // Add the current message
+  const today = new Date().toISOString().split('T')[0];
+  threadLines.push(`${today} - ${currentRole} - Inbound - ${currentBody}`);
+  
+  return threadLines.join('\n');
+}
+
+/**
+ * Use AI to evaluate if staff requirements are met
+ */
+async function evaluateRequirementsMet(task, threadContext) {
+  // Get requirements from task
+  const requirements = task.staff_requirements || 'Confirm the task can be completed and provide a time/schedule';
+  
+  // Build the prompt
+  const prompt = fillTemplate(PROMPT_TASK_BOOLEAN_EVAL_USER, {
+    REQUIREMENTS: requirements,
+    STAFF_MESSAGE: threadContext,
+  });
+  
+  console.log(`[TaskManager] Evaluating requirements: "${requirements}"`);
+  
+  try {
+    // Call AI with system + user messages
+    const response = await callGPTTurbo([
+      { role: 'system', content: PROMPT_TASK_BOOLEAN_EVAL_SYSTEM },
+      { role: 'user', content: prompt },
+    ]);
+    
+    const result = response.trim().toUpperCase();
+    console.log(`[TaskManager] AI evaluation result: ${result}`);
+    
+    return result === 'TRUE';
+  } catch (error) {
+    console.error(`[TaskManager] AI evaluation error:`, error.message);
+    // Default to true if AI fails - we'll generate a response anyway
+    return true;
+  }
+}
+
+/**
+ * Use AI to generate guest notification message
+ */
+async function generateGuestNotification(task, threadContext) {
+  // Detect language from guest message
+  const lang = await detectLanguage(task.guest_message || 'en');
+  
+  // Build the prompt
+  const prompt = fillTemplate(PROMPT_GUEST_TASK_COMPLETED, {
+    LANG: lang,
+    TASK_SCOPE: task.task_bucket || task.action_title || 'your request',
+    GUEST_MESSAGE: task.guest_message || '',
+    THREAD_CONTEXT: threadContext,
+  });
+  
+  try {
+    const result = await chatJSON(prompt);
+    
+    // The response might be plain text, not JSON
+    let message = result.raw || '';
+    
+    // Clean up the response
+    message = message.trim();
+    
+    // Remove any markdown or extra formatting
+    message = message.replace(/^["']|["']$/g, '');
+    
+    console.log(`[TaskManager] AI generated guest notification: "${message.substring(0, 100)}..."`);
+    
+    return message;
+  } catch (error) {
+    console.error(`[TaskManager] Failed to generate guest notification:`, error.message);
+    // Fallback message
+    return `Your request for "${task.task_bucket || 'assistance'}" has been acknowledged by our team. We'll update you once it's completed.`;
+  }
+}
+
+// ============================================================================
+// STAFF/HOST RESPONSE PROCESSING
+// ============================================================================
+
 /**
  * Process Staff/Host response message
  * Finds active tasks for this responder and updates them based on their reply
@@ -786,88 +895,80 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
   }
 
   for (const task of tasks) {
-    console.log(`[TaskManager] Updating task ${task.id} with ${role} response`);
+    console.log(`[TaskManager] ========================================`);
+    console.log(`[TaskManager] Processing ${role} response for task ${task.id}`);
+    console.log(`[TaskManager] Task: ${task.task_bucket}, Staff: ${task.staff_name}`);
+    console.log(`[TaskManager] ========================================`);
 
     // Append message to task's message chain
     const existingChain = task.message_chain_ids || '';
     const updatedChain = existingChain ? `${existingChain},${messageId}` : messageId;
 
-    // Determine new status based on response content
+    // Build thread context for AI evaluation
+    const threadContext = await buildThreadContext(task, messageId, body, role);
+    console.log(`[TaskManager] Thread context: ${threadContext.substring(0, 200)}...`);
+
+    // Use AI to evaluate if staff requirements are met
+    const requirementsMet = await evaluateRequirementsMet(task, threadContext);
+    console.log(`[TaskManager] AI evaluated requirements met: ${requirementsMet}`);
+
     let newStatus = task.status;
     let notifyGuest = false;
     let guestMessage = '';
 
-    // Keyword and pattern detection for status updates
-    const lowerBody = body.toLowerCase();
-    
-    // Check for completion
-    if (lowerBody.includes('done') || lowerBody.includes('completed') || lowerBody.includes('delivered') || lowerBody.includes('finished')) {
-      newStatus = 'Completed';
+    if (requirementsMet) {
+      // Requirements are met - use AI to generate guest notification
+      newStatus = 'Scheduled';  // Or 'Completed' if staff said it's done
+      
+      // Check if staff said it's already done
+      const lowerBody = body.toLowerCase();
+      if (lowerBody.includes('done') || lowerBody.includes('completed') || 
+          lowerBody.includes('delivered') || lowerBody.includes('finished')) {
+        newStatus = 'Completed';
+      }
+      
+      // Generate AI response to guest
+      guestMessage = await generateGuestNotification(task, threadContext);
       notifyGuest = true;
-      guestMessage = `Good news! Your request for "${task.task_bucket || task.action_title}" has been completed. Is there anything else we can help you with?`;
-    } 
-    // Check for "on my way" type messages
-    else if (lowerBody.includes('on my way') || lowerBody.includes('coming') || lowerBody.includes('will be there')) {
-      newStatus = 'In Progress';
-      notifyGuest = true;
-      guestMessage = `Update: Our team is on their way to help with your "${task.task_bucket || task.action_title}" request.`;
-    } 
-    // Check for scheduling confirmation (time patterns like "8:30am", "tomorrow", "at 9")
-    else if (
-      lowerBody.match(/\d{1,2}:\d{2}\s*(am|pm)?/i) ||  // Time pattern like "8:30am"
-      lowerBody.match(/at\s+\d{1,2}/i) ||  // "at 8", "at 9am"
-      lowerBody.includes('tomorrow') ||
-      lowerBody.includes('morning') ||
-      lowerBody.includes('afternoon') ||
-      lowerBody.includes('evening') ||
-      (lowerBody.includes('will') && (lowerBody.includes('bring') || lowerBody.includes('deliver') || lowerBody.includes('come'))) ||
-      lowerBody.includes('okay') || lowerBody.includes('sure') || lowerBody.includes('yes')
-    ) {
-      newStatus = 'Scheduled';
-      notifyGuest = true;
-      // Extract time info from the message for the guest notification
-      const taskName = task.task_bucket || task.action_title || 'your request';
-      guestMessage = `Great news! Your "${taskName}" has been scheduled. Staff confirmed: "${body}". We'll let you know once it's completed.`;
+      console.log(`[TaskManager] AI generated guest message: "${guestMessage?.substring(0, 100)}..."`);
+    } else {
+      // Requirements not met - check if escalation needed
+      const lowerBody = body.toLowerCase();
+      if (lowerBody.includes('cannot') || lowerBody.includes("can't") || 
+          lowerBody.includes('unable') || lowerBody.includes('no stock') ||
+          lowerBody.includes('not available')) {
+        newStatus = 'Escalated';
+        console.log(`[TaskManager] Staff indicated inability - escalating task`);
+      } else {
+        newStatus = 'In Progress';
+        console.log(`[TaskManager] Requirements not yet met, keeping as In Progress`);
+      }
     }
-    // Check for delays
-    else if (lowerBody.includes('delay') || lowerBody.includes('later') || lowerBody.includes('busy')) {
-      newStatus = 'In Progress';
-      notifyGuest = true;
-      guestMessage = `Update: There may be a short delay with your "${task.task_bucket || task.action_title}" request. We'll get to you as soon as possible.`;
-    } 
-    // Check for inability to complete
-    else if (lowerBody.includes('cannot') || lowerBody.includes("can't") || lowerBody.includes('unable') || lowerBody.includes('no stock')) {
-      newStatus = 'Escalated';
-      // May need host intervention
-    }
-    // Default: Any staff response should update the task to "In Progress"
-    else {
-      newStatus = task.status === 'Waiting on Staff' ? 'In Progress' : task.status;
-      console.log(`[TaskManager] No specific pattern matched, keeping status: ${newStatus}`);
-    }
-    
-    console.log(`[TaskManager] Status update: ${task.status} -> ${newStatus}, notifyGuest: ${notifyGuest}`);
-    if (notifyGuest) {
-      console.log(`[TaskManager] Guest message: "${guestMessage?.substring(0, 100)}..."`);
-    }
+
+    console.log(`[TaskManager] Status update: ${task.status} -> ${newStatus}`);
 
     // Update task
     await db.prepare(`
       UPDATE tasks SET 
         status = ?,
         message_chain_ids = ?,
+        response_received = 1,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(newStatus, updatedChain, task.id);
 
     // Log the response in task logs
-    await db.prepare(`
-      INSERT INTO d_task_logs (task_id, action, actor, message, created_at)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(task.id, `${role} Response`, role, body);
+    try {
+      await db.prepare(`
+        INSERT INTO d_task_logs (task_id, action, actor, message, created_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(task.id, `${role} Response`, role, body);
+    } catch (logErr) {
+      console.error(`[TaskManager] Failed to log to d_task_logs:`, logErr.message);
+    }
 
     // Notify guest if needed
-    if (notifyGuest && task.phone) {
+    if (notifyGuest && guestMessage && task.phone) {
       try {
         await sendWhatsAppMessage({
           to: task.phone,
@@ -880,9 +981,9 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
             referenceMessageIds: messageId,
           },
         });
-        console.log(`[TaskManager] Notified guest of task update: ${task.id}`);
+        console.log(`[TaskManager] ✓ Notified guest of task update`);
       } catch (err) {
-        console.error(`[TaskManager] Failed to notify guest:`, err.message);
+        console.error(`[TaskManager] ✗ Failed to notify guest:`, err.message);
       }
     }
 
@@ -891,6 +992,7 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
       previousStatus: task.status,
       newStatus,
       notifiedGuest: notifyGuest,
+      guestMessage: guestMessage?.substring(0, 100),
     });
   }
 
