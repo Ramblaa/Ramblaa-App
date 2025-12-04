@@ -82,7 +82,7 @@ Your output **must be a single, valid JSON object** matching the schema below �
 // MESSAGE SUMMARIZATION
 // ============================================================================
 
-// VERSION: 2024-12-04-v4 - CRITICAL FIX: Only extract from CURRENT message
+// VERSION: 2024-12-04-v5 - STRONGER: Use exact nouns from current message
 export const PROMPT_SUMMARIZE_MESSAGE_ACTIONS = `
 READ THE CURRENT MESSAGE BELOW AND EXTRACT ONLY ITS REQUESTS.
 
@@ -95,16 +95,28 @@ TASK: Extract 1-2 action titles from the CURRENT MESSAGE above.
 CRITICAL RULES:
 1. Extract ONLY from the text between "CURRENT MESSAGE" markers above
 2. DO NOT extract from the history below - history is for CONTEXT ONLY
-3. Use the guest's EXACT words (e.g., if they say "fresh towels" → "Fresh towels request")
-4. Ignore greetings like "Hi", "Hello", "Hi there"
+3. Use the guest's EXACT NOUNS from their current message:
+   - If they say "linen" → use "linen" (NOT "towels")
+   - If they say "towels" → use "towels" (NOT "linen")
+   - If they say "sheets" → use "sheets"
+   - These are DIFFERENT items - do not substitute!
+4. Ignore greetings like "Hi", "Hello", "Hi there", "Thanks", "Great"
 5. If message only contains a greeting or acknowledgment, return empty Action Titles array
+
+EXAMPLES:
+- Message: "Can I get fresh linen" → Action: "Fresh linen request"
+- Message: "Need more towels" → Action: "Fresh towels request"  
+- Message: "Pool needs cleaning" → Action: "Pool cleaning request"
+- Message: "Thanks!" → Action Titles: [] (empty - just acknowledgment)
+
+DO NOT MIX ITEMS FROM HISTORY INTO CURRENT REQUEST!
 
 OUTPUT FORMAT (strict JSON):
 {
   "Language": "en",
   "Tone": "Friendly",
   "Sentiment": "Neutral",
-  "Action Titles": ["<action from current message>"]
+  "Action Titles": ["<action using EXACT nouns from current message>"]
 }
 
 HISTORY (for context understanding ONLY - do NOT extract actions from here):
@@ -137,7 +149,11 @@ Rules:
 5) TaskRequired = true ONLY if the action needs operational work or coordination beyond knowledge.
 6) If TaskRequired == false → TaskBucket = "" and TaskRequestTitle = "".
 7) If TaskRequired == true:
-   - TaskBucket: choose one exact item from Tasks Available, else "Other".
+   - TaskBucket: MUST match the key noun in the Action Title.
+     • If Action Title says "linen" → pick "Fresh Linen" (NOT "Fresh Towels")
+     • If Action Title says "towel" → pick "Fresh Towels" (NOT "Fresh Linen")
+     • These are DIFFERENT items - do NOT substitute!
+   - Choose one exact item from Tasks Available that matches, else "Other".
    - TaskRequestTitle: short, specific, staff-facing (≤ 12 words), only about this action.
 8) AiResponse style:
    - Clear, objective, informative. No greeting, sign-off, emojis, exclamations, or names.

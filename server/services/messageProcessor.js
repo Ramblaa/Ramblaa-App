@@ -149,11 +149,12 @@ async function summarizeMessage(messageBody, history = '[]') {
   console.log('[MessageProcessor] Parsed actions:', JSON.stringify(actionTitles));
   
   // Sanity check - REJECT hallucinated actions
+  // Validate that the action's CORE NOUN matches what's in the message
   const lowerMessage = messageBody.toLowerCase();
   const validatedActions = actionTitles.filter(action => {
     const lowerAction = action.toLowerCase();
     
-    // Reject known hallucinations
+    // Reject known hallucinations - keywords NOT in current message
     if (lowerAction.includes('direction') && !lowerMessage.includes('direction')) {
       console.error('[MessageProcessor] REJECTED hallucinated action:', action);
       return false;
@@ -163,6 +164,31 @@ async function summarizeMessage(messageBody, history = '[]') {
       console.error('[MessageProcessor] REJECTED hallucinated action:', action);
       return false;
     }
+    
+    // CRITICAL: Prevent confusion between similar items (towel vs linen)
+    // If action mentions "towel" but message mentions "linen" (not towel) -> reject
+    if (lowerAction.includes('towel') && !lowerMessage.includes('towel') && lowerMessage.includes('linen')) {
+      console.error('[MessageProcessor] REJECTED action (towel vs linen):', action, '- message says:', messageBody);
+      return false;
+    }
+    // Reverse check: action says linen but message says towel
+    if (lowerAction.includes('linen') && !lowerMessage.includes('linen') && lowerMessage.includes('towel')) {
+      console.error('[MessageProcessor] REJECTED action (linen vs towel):', action, '- message says:', messageBody);
+      return false;
+    }
+    
+    // If action mentions "taxi" but not in message
+    if (lowerAction.includes('taxi') && !lowerMessage.includes('taxi')) {
+      console.error('[MessageProcessor] REJECTED hallucinated action:', action);
+      return false;
+    }
+    
+    // If action mentions "pool" but not in message
+    if (lowerAction.includes('pool') && !lowerMessage.includes('pool')) {
+      console.error('[MessageProcessor] REJECTED hallucinated action:', action);
+      return false;
+    }
+    
     return true;
   });
   
