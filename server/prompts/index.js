@@ -82,44 +82,37 @@ Your output **must be a single, valid JSON object** matching the schema below �
 // MESSAGE SUMMARIZATION
 // ============================================================================
 
-// VERSION: 2024-12-04-v5 - STRONGER: Use exact nouns from current message
+// VERSION: 2024-12-04-v6 - AI self-validation, no hardcoded checks
 export const PROMPT_SUMMARIZE_MESSAGE_ACTIONS = `
-READ THE CURRENT MESSAGE BELOW AND EXTRACT ONLY ITS REQUESTS.
+You must extract action requests from ONLY the current message.
 
-===== CURRENT MESSAGE (extract from THIS only) =====
+===== CURRENT MESSAGE =====
 {{MESSAGE}}
 ===== END CURRENT MESSAGE =====
 
 TASK: Extract 1-2 action titles from the CURRENT MESSAGE above.
 
-CRITICAL RULES:
-1. Extract ONLY from the text between "CURRENT MESSAGE" markers above
-2. DO NOT extract from the history below - history is for CONTEXT ONLY
-3. Use the guest's EXACT NOUNS from their current message:
-   - If they say "linen" → use "linen" (NOT "towels")
-   - If they say "towels" → use "towels" (NOT "linen")
-   - If they say "sheets" → use "sheets"
-   - These are DIFFERENT items - do not substitute!
-4. Ignore greetings like "Hi", "Hello", "Hi there", "Thanks", "Great"
-5. If message only contains a greeting or acknowledgment, return empty Action Titles array
+MANDATORY RULES:
+1. ONLY extract requests that appear in the CURRENT MESSAGE section above
+2. The history section below is ONLY for understanding context - NEVER extract actions from it
+3. Each action title MUST contain words/concepts that actually appear in the current message
+4. If the current message is just a greeting, thanks, or acknowledgment → return empty Action Titles array
+5. Use the guest's actual words from their message - do not substitute similar words
 
-EXAMPLES:
-- Message: "Can I get fresh linen" → Action: "Fresh linen request"
-- Message: "Need more towels" → Action: "Fresh towels request"  
-- Message: "Pool needs cleaning" → Action: "Pool cleaning request"
-- Message: "Thanks!" → Action Titles: [] (empty - just acknowledgment)
+SELF-VALIDATION (check before outputting):
+Before adding any action to your output, verify:
+- Does this action's main subject appear in the CURRENT MESSAGE? If NO → do not include it
+- Am I accidentally pulling this from the history? If YES → do not include it
 
-DO NOT MIX ITEMS FROM HISTORY INTO CURRENT REQUEST!
-
-OUTPUT FORMAT (strict JSON):
+OUTPUT FORMAT (strict JSON only, no other text):
 {
-  "Language": "en",
-  "Tone": "Friendly",
-  "Sentiment": "Neutral",
-  "Action Titles": ["<action using EXACT nouns from current message>"]
+  "Language": "<2-letter code>",
+  "Tone": "Friendly|Neutral|Frustrated|etc",
+  "Sentiment": "Positive|Neutral|Negative",
+  "Action Titles": ["<only actions from current message>"]
 }
 
-HISTORY (for context understanding ONLY - do NOT extract actions from here):
+HISTORY (context only - do NOT extract actions from here):
 {{HISTORICAL_MESSAGES}}
 `;
 
@@ -149,12 +142,10 @@ Rules:
 5) TaskRequired = true ONLY if the action needs operational work or coordination beyond knowledge.
 6) If TaskRequired == false → TaskBucket = "" and TaskRequestTitle = "".
 7) If TaskRequired == true:
-   - TaskBucket: MUST match the key noun in the Action Title.
-     • If Action Title says "linen" → pick "Fresh Linen" (NOT "Fresh Towels")
-     • If Action Title says "towel" → pick "Fresh Towels" (NOT "Fresh Linen")
-     • These are DIFFERENT items - do NOT substitute!
-   - Choose one exact item from Tasks Available that matches, else "Other".
-   - TaskRequestTitle: short, specific, staff-facing (≤ 12 words), only about this action.
+   - TaskBucket: Select the task from "Tasks Available" that BEST MATCHES the Action Title's subject
+   - The Action Title contains the guest's actual request - match it semantically
+   - If no task matches the Action Title's subject, use "Other"
+   - TaskRequestTitle: short, specific, staff-facing (≤ 12 words), describing only THIS action.
 8) AiResponse style:
    - Clear, objective, informative. No greeting, sign-off, emojis, exclamations, or names.
    - 1–2 sentences. Do NOT ask the guest any questions.

@@ -57,12 +57,9 @@ export async function createTasksFromAiLogs() {
       continue;
     }
     
-    // Skip invalid buckets (hallucinated tasks)
-    const lowerBucket = log.task_bucket.toLowerCase();
-    if (lowerBucket.includes('wifi') || lowerBucket.includes('wi-fi') || 
-        lowerBucket.includes('direction') || lowerBucket.includes('taxi') ||
-        log.task_bucket === 'Other') {
-      console.log(`[TaskManager] ✗ Skipping invalid bucket: "${log.task_bucket}"`);
+    // Skip if bucket is "Other" or empty (no matching task definition found by AI)
+    if (log.task_bucket === 'Other' || !log.task_bucket || log.task_bucket.trim() === '') {
+      console.log(`[TaskManager] ✗ Skipping unmatched bucket: "${log.task_bucket}"`);
       await db.prepare(`UPDATE ai_logs SET task_created = 1 WHERE id = ?`).run(log.id);
       continue;
     }
