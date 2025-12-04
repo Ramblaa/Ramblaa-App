@@ -618,5 +618,102 @@ router.post('/seed', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/properties/migrate-to-uuid
+ * Migrate a property from custom ID to UUID and update all related tables
+ */
+router.post('/migrate-to-uuid', async (req, res) => {
+  try {
+    const db = getDb();
+    const { oldId, newId } = req.body;
+
+    if (!oldId || !newId) {
+      return res.status(400).json({ error: 'Missing required fields: oldId, newId' });
+    }
+
+    console.log(`[Migration] Migrating property ${oldId} -> ${newId}`);
+
+    // Check if old property exists
+    const oldProperty = await db.prepare('SELECT * FROM properties WHERE id = ?').get(oldId);
+    if (!oldProperty) {
+      return res.status(404).json({ error: `Property ${oldId} not found` });
+    }
+
+    // Check if new ID already exists
+    const existingNew = await db.prepare('SELECT id FROM properties WHERE id = ?').get(newId);
+    if (existingNew) {
+      return res.status(400).json({ error: `Property ${newId} already exists` });
+    }
+
+    // Create new property with UUID
+    await db.prepare(`
+      INSERT INTO properties (id, name, address, host_phone, host_name, details_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(
+      newId,
+      oldProperty.name,
+      oldProperty.address,
+      oldProperty.host_phone,
+      oldProperty.host_name,
+      oldProperty.details_json,
+      oldProperty.created_at
+    );
+
+    // Update all related tables
+    const updates = {};
+
+    // Update bookings
+    const bookingResult = await db.prepare('UPDATE bookings SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.bookings = bookingResult.changes || 0;
+
+    // Update staff
+    const staffResult = await db.prepare('UPDATE staff SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.staff = staffResult.changes || 0;
+
+    // Update messages
+    const messagesResult = await db.prepare('UPDATE messages SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.messages = messagesResult.changes || 0;
+
+    // Update tasks
+    const tasksResult = await db.prepare('UPDATE tasks SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.tasks = tasksResult.changes || 0;
+
+    // Update faqs
+    const faqsResult = await db.prepare('UPDATE faqs SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.faqs = faqsResult.changes || 0;
+
+    // Update task_definitions
+    const taskDefsResult = await db.prepare('UPDATE task_definitions SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.taskDefinitions = taskDefsResult.changes || 0;
+
+    // Update ai_logs
+    const aiLogsResult = await db.prepare('UPDATE ai_logs SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.aiLogs = aiLogsResult.changes || 0;
+
+    // Update summarized_logs
+    const sumLogsResult = await db.prepare('UPDATE summarized_logs SET property_id = ? WHERE property_id = ?').run(newId, oldId);
+    updates.summarizedLogs = sumLogsResult.changes || 0;
+
+    // Delete old property
+    await db.prepare('DELETE FROM properties WHERE id = ?').run(oldId);
+
+    console.log(`[Migration] Completed: ${JSON.stringify(updates)}`);
+
+    // Return new property data
+    const newProperty = await db.prepare('SELECT * FROM properties WHERE id = ?').get(newId);
+
+    res.json({
+      message: 'Property migrated successfully',
+      oldId,
+      newId,
+      updates,
+      property: newProperty
+    });
+  } catch (error) {
+    console.error('[Migration] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 
