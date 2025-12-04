@@ -397,8 +397,8 @@ Keep essential facts (times, addresses, Wi‑Fi SSIDs/passwords, links, commitme
 Remove duplicates and repeated greetings/signatures. Use 1–3 short paragraphs. No preamble. Return only the final text.`;
     const user   = `Combine these into a single message:\n${textList}`;
 
-    let merged = '';
-    try {
+     let merged = '';
+     try {
       merged = callGPTTurbo([{role:'system',content:system},{role:'user',content:user}], apiKey).trim();
     } catch (_){}
     if (!merged) merged = arr.map(a => a.body).join('\n\n');
@@ -1081,14 +1081,14 @@ function lookupSingleJSONByKeyFlexible(tabName, keyHeaderCandidates, keyVal, key
   if (hasSecond && want1 && want2) {
     // Assume A=JSON, B=Key1, C=Key2
     if (lastCol < 3) return '';
-    const k1 = sh.getRange(1, 2, lastRow, 1).getValues();
-    const k2 = sh.getRange(1, 3, lastRow, 1).getValues();
-    const js = sh.getRange(1, 1, lastRow, 1).getValues();
+      const k1 = sh.getRange(1, 2, lastRow, 1).getValues();
+      const k2 = sh.getRange(1, 3, lastRow, 1).getValues();
+      const js = sh.getRange(1, 1, lastRow, 1).getValues();
     for (let i = k1.length - 1; i >= 0; i--) {
-      if (String(k1[i][0] || '').trim() === want1 && String(k2[i][0] || '').trim() === want2) {
-        return String(js[i][0] || '').trim();
+        if (String(k1[i][0] || '').trim() === want1 && String(k2[i][0] || '').trim() === want2) {
+          return String(js[i][0] || '').trim();
+        }
       }
-    }
     // Fallback to single-key (A=JSON, B=Key1)
     const keys = sh.getRange(1, 2, lastRow, 1).getValues();
     const json = sh.getRange(1, 1, lastRow, 1).getValues();
@@ -2555,7 +2555,7 @@ function evaluateGuestRequirementsFromThread(guestRequirements, threadRaw, apiKe
    - full prompt/response logging to d:debugAi (TRIAGE, GUEST_EVAL, DECISION)
    - duplicate-ask guard respected from triage JSON
    - gpt-5-mini-2025-08-07 model
-*/
+ */
 function buildNextTaskMessage() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName('aiTasks');
@@ -2645,12 +2645,12 @@ function buildNextTaskMessage() {
     // Completed → notify guest via AH phone (guest)
     const isCompleted = /^completed$/i.test(String(vSTAT[i][0]||'').trim());
     if (isCompleted && !truthy(vAHN[i][0])) {
-      let lang='en'; try { lang = LanguageApp.detectLanguage(act || conv || '') || 'en'; } catch(_){}
-      const prompt = fillTpl_(PROMPT_GUEST_TASK_COMPLETED, {
+        let lang='en'; try { lang = LanguageApp.detectLanguage(act || conv || '') || 'en'; } catch(_){}
+        const prompt = fillTpl_(PROMPT_GUEST_TASK_COMPLETED, {
         LANG: lang, GUEST_MESSAGE: act || '(none)', THREAD_CONTEXT: conv, TASK_JSON: String(vJS[i][0]||'')
-      });
-      let txt=''; try { txt = callGPTTurbo([{role:'user',content:prompt}], apiKey).trim(); } catch(_){}
-      if (txt) {
+        });
+        let txt=''; try { txt = callGPTTurbo([{role:'user',content:prompt}], apiKey).trim(); } catch(_){}
+        if (txt) {
         vOUT[i][0]=txt; vAH[i][0]='Guest'; vAHN[i][0]=true; vAHM[i][0]=''; vAHP[i][0]=gph; any=true;
         appendOutboundToAiLog({
           recipientType:'Guest', propertyId: pid, to: gph,
@@ -2731,8 +2731,8 @@ function buildNextTaskMessage() {
     }
 
     // Staff branch
-    const sJson = String(vSJSON[i][0]||'').trim();
-    const sLang = (function(){ try{ const o=JSON.parse(sJson||'{}'); return o.preferred_language||o.language||o.lang||'en'; }catch(_){ return 'en'; }})();
+      const sJson = String(vSJSON[i][0]||'').trim();
+      const sLang = (function(){ try{ const o=JSON.parse(sJson||'{}'); return o.preferred_language||o.language||o.lang||'en'; }catch(_){ return 'en'; }})();
     const first = (sName||'').split(/\s+/)[0] || 'there';
     const latestStaffInbound = (function(raw){
       try { const a=JSON.parse(raw||'[]'); if (Array.isArray(a)) for (let j=a.length-1;j>=0;j--){ const s=String(a[j]||''); if (/Staff:/i.test(s)) return s.replace(/^.*Staff:\s*/i,'').trim(); } } catch(_){}
@@ -2746,11 +2746,11 @@ function buildNextTaskMessage() {
       STAFF_CONVERSATION: conv, GUEST_CONTEXT: `Guest request/context: ${act||'(none)'}`, THREAD_CONTEXT: conv
     });
     const sRes = openAIChatJSON_(sPrompt, apiKey, 'gpt-5-mini-2025-08-07');
-    let txt = (sRes && sRes.raw) ? sRes.raw.trim() : '';
-    if (!txt) continue;
+      let txt = (sRes && sRes.raw) ? sRes.raw.trim() : '';
+      if (!txt) continue;
     if (!/^Staff:/i.test(txt)) txt = `Staff: Hi ${first} — ${txt}`;
     txt = txt.replace(/^Staff:\s*Hi\s+([^—-]+)[—-]\s*/i, `Staff: Hi ${first} — `);
-    if (hasKickoff && respReceived && sameMsg(txt, existingOut)) continue;
+      if (hasKickoff && respReceived && sameMsg(txt, existingOut)) continue;
 
     vOUT[i][0]=txt; vAHN[i][0]=true; any=true;
     appendOutboundToAiLog({
@@ -3060,15 +3060,15 @@ function sendWhatsApp() {
     function appendMessageLog({ sidSM, from, to, body, typ, refMsg, refTask, euid, bookingId }) {
       const ss    = SpreadsheetApp.getActiveSpreadsheet();
       const msgSh = ss.getSheetByName('d:messageLog');
-      if (!msgSh) return;
+    if (!msgSh) return;
 
       // headers (case-insensitive)
       const norm = s => String(s||'').replace(/[\u2018\u2019\u201C\u201D]/g,"'")
         .normalize('NFKC').trim().toLowerCase().replace(/\s+/g,' ').replace(/[?:.,;—–-]/g,'');
-      const H = (() => {
-        const r = msgSh.getRange(1,1,1,msgSh.getLastColumn()).getValues()[0] || [];
-        const m = {}; r.forEach((h,i)=>{ const n = norm(h); if (n && !m[n]) m[n]=i+1; }); return m;
-      })();
+    const H = (() => {
+      const r = msgSh.getRange(1,1,1,msgSh.getLastColumn()).getValues()[0] || [];
+      const m = {}; r.forEach((h,i)=>{ const n = norm(h); if (n && !m[n]) m[n]=i+1; }); return m;
+    })();
       const pick = (...alts)=>{ for (const a of alts){ const c=H[norm(a)]; if (c) return c; } return null; };
 
       const C_UUID   = pick('Message UUID') || pick('UUID','SID','Message SID') || 1;
@@ -3088,34 +3088,34 @@ function sendWhatsApp() {
 
       const lastCol   = msgSh.getLastColumn();
       const targetRow = msgSh.getLastRow() + 1;
-      const out = Array(lastCol).fill('');
+    const out = Array(lastCol).fill('');
 
       // Booking Id: prefer provided, else by 'to' phone
       let finalBookingId = String(bookingId || '').trim();
-      if (!finalBookingId && C_BOOK) {
+    if (!finalBookingId && C_BOOK) {
         try { finalBookingId = lookupBookingIdByPhone_(ss, to) || ''; } catch (_) {}
-      }
+    }
 
       // Property Id: prefer via booking, else via staff
-      let propertyId = '';
+    let propertyId = '';
       try {
         if (finalBookingId) propertyId = lookupPropertyIdByBookingId_(ss, finalBookingId) || '';
       } catch (_) {}
-      let staffRec = null;
-      try {
-        staffRec = lookupStaffRecordByPhone_(ss, to);
+    let staffRec = null;
+    try {
+      staffRec = lookupStaffRecordByPhone_(ss, to);
         if (!staffRec || staffRec.role === 'Guest') {
           const srFrom = lookupStaffRecordByPhone_(ss, from);
           if (srFrom && srFrom.role !== 'Guest') staffRec = srFrom;
         }
-        if (!propertyId && staffRec && staffRec.pid) propertyId = staffRec.pid;
+      if (!propertyId && staffRec && staffRec.pid) propertyId = staffRec.pid;
       } catch (_) {}
 
       // Staff Id if any staff phone matched
       const staffId = (staffRec && staffRec.staffId) ? staffRec.staffId : '';
 
       // write row
-      const set = (c,v)=>{ if (c && c<=lastCol) out[c-1]=v; };
+    const set = (c,v)=>{ if (c && c<=lastCol) out[c-1]=v; };
       set(C_UUID,  sidSM);
       set(C_DATE,  new Date());
       set(C_FROM,  from);
@@ -3131,7 +3131,7 @@ function sendWhatsApp() {
       if (C_STAFF) set(C_STAFF, staffId || '');
 
       msgSh.getRange(targetRow, 1, 1, lastCol).setValues([out]);
-      SpreadsheetApp.flush();
+    SpreadsheetApp.flush();
 
       // optional: let existing ARRAYFORMULAs fill Requestor Role if present
       let requestorRole = '';
@@ -3145,11 +3145,11 @@ function sendWhatsApp() {
       }
 
       // webhook (prop/staff kept in raw_data)
-      try {
-        sendMessageLogToWebhook({
+    try {
+      sendMessageLogToWebhook({
           sidSM, from, to, body, typ: (typ||'Outbound'),
           refMsg, refTask, euid,
-          bookingId: finalBookingId || '',
+        bookingId: finalBookingId || '',
           requestorRole,
           propertyId, staffId,
           sheetRow: targetRow
