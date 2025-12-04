@@ -789,6 +789,50 @@ async function evaluateRequirementsMet(task, threadContext) {
 }
 
 /**
+ * Use AI to determine if task is COMPLETED or SCHEDULED
+ * This handles multiple languages and dynamic phrasing
+ */
+async function evaluateTaskCompletionStatus(task, threadContext, staffMessage) {
+  const prompt = `You are evaluating a staff response to determine the task status.
+
+TASK: ${task.task_bucket || task.action_title || 'Guest request'}
+
+STAFF'S LATEST MESSAGE:
+${staffMessage}
+
+THREAD CONTEXT:
+${threadContext}
+
+Based on the staff's message, determine the status. The staff may write in ANY language.
+
+Return EXACTLY one of these words (no other text):
+- COMPLETED - if staff indicates the task is DONE/FINISHED/DELIVERED right now
+- SCHEDULED - if staff confirms a future time/schedule but hasn't done it yet
+- IN_PROGRESS - if staff acknowledges but hasn't confirmed completion or schedule
+- ESCALATED - if staff says they CANNOT complete the task (out of stock, unavailable, need approval, etc.)
+
+Answer:`;
+
+  try {
+    const response = await callGPTTurbo([
+      { role: 'user', content: prompt },
+    ]);
+    
+    const result = response.trim().toUpperCase().replace(/[^A-Z_]/g, '');
+    console.log(`[TaskManager] AI completion status: ${result}`);
+    
+    // Map to valid status
+    if (result.includes('COMPLETED')) return 'Completed';
+    if (result.includes('SCHEDULED')) return 'Scheduled';
+    if (result.includes('ESCALATED')) return 'Escalated';
+    return 'In Progress';
+  } catch (error) {
+    console.error(`[TaskManager] AI status evaluation error:`, error.message);
+    return 'In Progress';
+  }
+}
+
+/**
  * Use AI to generate guest notification message
  */
 async function generateGuestNotification(task, threadContext) {
@@ -929,43 +973,35 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
     let notifyGuest = false;
     let guestMessage = '';
 
-    // Determine action holder based on who responded
-    let newActionHolder = role === 'Staff' ? 'Guest' : 'Staff'; // Flip to the other party
+    // Use AI to determine the task status (handles any language)
+    newStatus = await evaluateTaskCompletionStatus(task, threadContext, body);
+    console.log(`[TaskManager] AI determined status: ${newStatus}`);
     
-    if (requirementsMet) {
-      // Requirements are met - use AI to generate guest notification
-      const lowerBody = body.toLowerCase();
-      
-      // Check if staff said it's already done/completed
-      if (lowerBody.includes('done') || lowerBody.includes('completed') || 
-          lowerBody.includes('delivered') || lowerBody.includes('finished') ||
-          lowerBody.includes('all set') || lowerBody.includes('taken care')) {
-        newStatus = 'Completed';
+    // Set action holder based on status
+    let newActionHolder;
+    switch (newStatus) {
+      case 'Completed':
         newActionHolder = 'None';  // Task is complete, no one needs to act
-      } else {
-        // Staff confirmed a schedule but hasn't done it yet
-        newStatus = 'Scheduled';
+        notifyGuest = true;
+        break;
+      case 'Scheduled':
         newActionHolder = 'Staff';  // Staff still needs to complete it
-      }
-      
-      // Generate AI response to guest
-      guestMessage = await generateGuestNotification(task, threadContext);
-      notifyGuest = true;
-      console.log(`[TaskManager] AI generated guest message: "${guestMessage?.substring(0, 100)}..."`);
-    } else {
-      // Requirements not met - check if escalation needed
-      const lowerBody = body.toLowerCase();
-      if (lowerBody.includes('cannot') || lowerBody.includes("can't") || 
-          lowerBody.includes('unable') || lowerBody.includes('no stock') ||
-          lowerBody.includes('not available')) {
-        newStatus = 'Escalated';
+        notifyGuest = true;
+        break;
+      case 'Escalated':
         newActionHolder = 'Host';  // Escalate to host
-        console.log(`[TaskManager] Staff indicated inability - escalating task to Host`);
-      } else {
-        newStatus = 'In Progress';
+        notifyGuest = false;  // Don't notify guest yet, host will handle
+        break;
+      default:  // In Progress
         newActionHolder = 'Staff';  // Staff still working on it
-        console.log(`[TaskManager] Requirements not yet met, keeping as In Progress`);
-      }
+        notifyGuest = false;  // Don't spam guest with "in progress" updates
+        break;
+    }
+    
+    // Generate AI response to guest if needed
+    if (notifyGuest) {
+      guestMessage = await generateGuestNotification(task, threadContext);
+      console.log(`[TaskManager] AI generated guest message: "${guestMessage?.substring(0, 100)}..."`);
     }
 
     console.log(`[TaskManager] Status: ${task.status} -> ${newStatus}, ActionHolder: ${task.action_holder} -> ${newActionHolder}`);
