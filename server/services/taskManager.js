@@ -1006,16 +1006,33 @@ export async function processStaffHostResponse({ messageId, from, body, role, pr
 
     console.log(`[TaskManager] Status: ${task.status} -> ${newStatus}, ActionHolder: ${task.action_holder} -> ${newActionHolder}`);
 
-    // Update task with new status and action holder
-    await db.prepare(`
+    // Build update query based on status
+    let updateSql = `
       UPDATE tasks SET 
         status = ?,
         action_holder = ?,
         message_chain_ids = ?,
         response_received = 1,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(newStatus, newActionHolder, updatedChain, task.id);
+    `;
+    const updateParams = [newStatus, newActionHolder, updatedChain];
+    
+    // Set scheduled_at when status becomes Scheduled
+    if (newStatus === 'Scheduled' && task.status !== 'Scheduled') {
+      updateSql += `, scheduled_at = CURRENT_TIMESTAMP`;
+      console.log(`[TaskManager] Setting scheduled_at timestamp`);
+    }
+    
+    // Set completed_at when status becomes Completed
+    if (newStatus === 'Completed' && task.status !== 'Completed') {
+      updateSql += `, completed_at = CURRENT_TIMESTAMP`;
+      console.log(`[TaskManager] Setting completed_at timestamp`);
+    }
+    
+    updateSql += ` WHERE id = ?`;
+    updateParams.push(task.id);
+    
+    await db.prepare(updateSql).run(...updateParams);
 
     // Log the response in task logs
     try {

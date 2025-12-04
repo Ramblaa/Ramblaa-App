@@ -231,6 +231,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   completion_notified INTEGER DEFAULT 0,
   message_chain_ids TEXT,
   ongoing_conversation TEXT,
+  scheduled_at TIMESTAMP,
+  completed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (property_id) REFERENCES properties(id),

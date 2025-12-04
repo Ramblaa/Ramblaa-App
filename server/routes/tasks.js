@@ -146,6 +146,41 @@ router.post('/force-create', async (req, res) => {
 });
 
 /**
+ * POST /api/tasks/migrate-dates
+ * Add scheduled_at and completed_at columns to tasks table
+ */
+router.post('/migrate-dates', async (req, res) => {
+  try {
+    const db = getDb();
+    
+    // Add scheduled_at column if not exists
+    try {
+      await db.prepare(`ALTER TABLE tasks ADD COLUMN scheduled_at TIMESTAMP`).run();
+      console.log('[Tasks] Added scheduled_at column');
+    } catch (e) {
+      if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) {
+        console.log('[Tasks] scheduled_at column may already exist:', e.message);
+      }
+    }
+    
+    // Add completed_at column if not exists
+    try {
+      await db.prepare(`ALTER TABLE tasks ADD COLUMN completed_at TIMESTAMP`).run();
+      console.log('[Tasks] Added completed_at column');
+    } catch (e) {
+      if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) {
+        console.log('[Tasks] completed_at column may already exist:', e.message);
+      }
+    }
+    
+    res.json({ success: true, message: 'Date columns migration complete' });
+  } catch (error) {
+    console.error('[Tasks] Migration error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/tasks/cleanup
  * Clean up old broken tasks from previous buggy runs
  */
@@ -297,6 +332,8 @@ router.get('/:id', async (req, res) => {
       })),
       createdAt: task.created_at,
       updatedAt: task.updated_at,
+      scheduledAt: task.scheduled_at,
+      completedAt: task.completed_at,
     });
   } catch (error) {
     console.error('[Tasks] Get error:', error);
@@ -480,8 +517,11 @@ function formatStatus(status) {
   if (!status) return 'pending';
   const lower = status.toLowerCase();
   if (lower.includes('completed')) return 'completed';
+  if (lower.includes('scheduled')) return 'scheduled';
+  if (lower.includes('in progress') || lower.includes('in-progress')) return 'in-progress';
   if (lower.includes('staff')) return 'in-progress';
-  if (lower.includes('host')) return 'escalated';
+  if (lower.includes('escalated') || lower.includes('host')) return 'escalated';
+  if (lower.includes('waiting')) return 'pending';
   return 'pending';
 }
 
