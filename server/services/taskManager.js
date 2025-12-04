@@ -615,6 +615,130 @@ export async function updateTask(taskId, updates) {
   return await getTaskById(taskId);
 }
 
+/**
+ * Process Staff/Host response message
+ * Finds active tasks for this responder and updates them based on their reply
+ */
+export async function processStaffHostResponse({ messageId, from, body, role, propertyId, staffId }) {
+  const db = getDb();
+  const results = [];
+
+  console.log(`[TaskManager] Processing ${role} response from ${from}: "${body.substring(0, 50)}..."`);
+
+  // Find active tasks for this staff member or property
+  let tasks = [];
+  
+  if (role === 'Staff' && staffId) {
+    // Find tasks assigned to this staff member
+    tasks = await db.prepare(`
+      SELECT * FROM tasks 
+      WHERE staff_id = ? AND status NOT IN ('Completed', 'Archived', 'Cancelled')
+      ORDER BY created_at DESC
+    `).all(staffId);
+  } else if (role === 'Host' && propertyId) {
+    // Find tasks escalated to host for this property
+    tasks = await db.prepare(`
+      SELECT * FROM tasks 
+      WHERE property_id = ? AND status = 'Waiting on Host'
+      ORDER BY created_at DESC
+    `).all(propertyId);
+  }
+
+  if (!tasks.length) {
+    // No active tasks - just log it
+    console.log(`[TaskManager] No active tasks found for ${role} ${from}`);
+    
+    // Try to find most recent task for this property/staff
+    const recentTask = await db.prepare(`
+      SELECT * FROM tasks 
+      WHERE (staff_id = ? OR property_id = ?) AND status != 'Archived'
+      ORDER BY created_at DESC LIMIT 1
+    `).get(staffId || '', propertyId || '');
+    
+    if (recentTask) {
+      tasks = [recentTask];
+      console.log(`[TaskManager] Found recent task ${recentTask.id} to associate response with`);
+    }
+  }
+
+  for (const task of tasks) {
+    console.log(`[TaskManager] Updating task ${task.id} with ${role} response`);
+
+    // Append message to task's message chain
+    const existingChain = task.message_chain_ids || '';
+    const updatedChain = existingChain ? `${existingChain},${messageId}` : messageId;
+
+    // Determine new status based on response content
+    let newStatus = task.status;
+    let notifyGuest = false;
+    let guestMessage = '';
+
+    // Simple keyword detection for status updates
+    const lowerBody = body.toLowerCase();
+    
+    if (lowerBody.includes('done') || lowerBody.includes('completed') || lowerBody.includes('delivered') || lowerBody.includes('finished')) {
+      newStatus = 'Completed';
+      notifyGuest = true;
+      guestMessage = `Good news! Your request for "${task.task_bucket || task.action_title}" has been completed. Is there anything else we can help you with?`;
+    } else if (lowerBody.includes('on my way') || lowerBody.includes('coming') || lowerBody.includes('will be there')) {
+      newStatus = 'In Progress';
+      notifyGuest = true;
+      guestMessage = `Update: Our team is on their way to help with your "${task.task_bucket || task.action_title}" request.`;
+    } else if (lowerBody.includes('delay') || lowerBody.includes('later') || lowerBody.includes('busy')) {
+      newStatus = 'In Progress';
+      notifyGuest = true;
+      guestMessage = `Update: There may be a short delay with your "${task.task_bucket || task.action_title}" request. We'll get to you as soon as possible.`;
+    } else if (lowerBody.includes('cannot') || lowerBody.includes("can't") || lowerBody.includes('unable') || lowerBody.includes('no stock')) {
+      newStatus = 'Escalated';
+      // May need host intervention
+    }
+
+    // Update task
+    await db.prepare(`
+      UPDATE tasks SET 
+        status = ?,
+        message_chain_ids = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(newStatus, updatedChain, task.id);
+
+    // Log the response in task logs
+    await db.prepare(`
+      INSERT INTO d_task_logs (task_id, action, actor, message, created_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(task.id, `${role} Response`, role, body);
+
+    // Notify guest if needed
+    if (notifyGuest && task.phone) {
+      try {
+        await sendWhatsAppMessage({
+          to: task.phone,
+          body: guestMessage,
+          recipientType: 'Guest',
+          metadata: {
+            propertyId: task.property_id,
+            bookingId: task.booking_id,
+            taskId: task.id,
+            referenceMessageIds: messageId,
+          },
+        });
+        console.log(`[TaskManager] Notified guest of task update: ${task.id}`);
+      } catch (err) {
+        console.error(`[TaskManager] Failed to notify guest:`, err.message);
+      }
+    }
+
+    results.push({
+      taskId: task.id,
+      previousStatus: task.status,
+      newStatus,
+      notifiedGuest: notifyGuest,
+    });
+  }
+
+  return results;
+}
+
 export default {
   createTasksFromAiLogs,
   processTaskWorkflow,
@@ -623,4 +747,5 @@ export default {
   getActiveTasks,
   getTaskById,
   updateTask,
+  processStaffHostResponse,
 };

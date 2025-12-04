@@ -49,9 +49,17 @@ export async function sendWhatsAppMessage({
   const fromNumber = from || config.twilio.whatsappNumber;
   const toFormatted = formatForWhatsApp(fromNumber, to);
 
+  // Prepend role prefix for Staff/Host messages (for testing with single number)
+  let messageBody = body;
+  if (recipientType === 'Staff') {
+    messageBody = `[STAFF] ${body}`;
+  } else if (recipientType === 'Host') {
+    messageBody = `[HOST] ${body}`;
+  }
+
   try {
     const message = await client.messages.create({
-      body,
+      body: messageBody,
       from: fromNumber,
       to: toFormatted,
     });
