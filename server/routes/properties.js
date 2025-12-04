@@ -417,11 +417,11 @@ router.post('/seed', async (req, res) => {
     const propertyId = propertyData['Property Id']?.toString() || uuidv4();
 
     // Check if property exists
-    const existing = db.prepare('SELECT id FROM properties WHERE id = ?').get(propertyId);
+    const existing = await db.prepare('SELECT id FROM properties WHERE id = ?').get(propertyId);
     
     if (existing) {
       // Update existing
-      db.prepare(`
+      await db.prepare(`
         UPDATE properties SET
           name = ?, address = ?, host_phone = ?, host_name = ?, details_json = ?,
           updated_at = CURRENT_TIMESTAMP
@@ -436,7 +436,7 @@ router.post('/seed', async (req, res) => {
       );
     } else {
       // Insert new
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO properties (id, name, address, host_phone, host_name, details_json)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(
@@ -455,9 +455,9 @@ router.post('/seed', async (req, res) => {
     const startDate = today.toISOString().split('T')[0];
     const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    const existingBooking = db.prepare('SELECT id FROM bookings WHERE property_id = ?').get(propertyId);
+    const existingBooking = await db.prepare('SELECT id FROM bookings WHERE property_id = ?').get(propertyId);
     if (!existingBooking) {
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO bookings (id, property_id, guest_name, guest_phone, start_date, end_date, details_json)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `).run(
@@ -471,31 +471,31 @@ router.post('/seed', async (req, res) => {
       );
     }
 
-    // Create sample messages
-    const existingMessages = db.prepare('SELECT COUNT(*) as count FROM messages WHERE property_id = ?').get(propertyId);
-    if (existingMessages.count === 0) {
+    // Create sample messages - use PostgreSQL timestamp syntax
+    const existingMessages = await db.prepare('SELECT COUNT(*) as count FROM messages WHERE property_id = ?').get(propertyId);
+    if (!existingMessages || existingMessages.count === 0 || existingMessages.count === '0') {
       const msgId1 = uuidv4();
       const msgId2 = uuidv4();
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO messages (id, property_id, booking_id, from_number, to_number, body, message_type, requestor_role, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-1 hour'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW() - INTERVAL '1 hour')
       `).run(msgId1, propertyId, bookingId, 'whatsapp:+31630211666', 'whatsapp:+14155238886', 
         'Hi! What is the WiFi password?', 'Inbound', 'Guest');
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO messages (id, property_id, booking_id, from_number, to_number, body, message_type, requestor_role, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-30 minutes'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW() - INTERVAL '30 minutes')
       `).run(msgId2, propertyId, bookingId, 'whatsapp:+14155238886', 'whatsapp:+31630211666',
         `The WiFi network is "${propertyData['Wifi Network Name'] || 'kaum_villa'}" and the password is "${propertyData['Wifi Password'] || 'balilestari'}". Enjoy your stay!`,
         'Outbound', 'Host');
     }
 
     // Create a sample task
-    const existingTasks = db.prepare('SELECT COUNT(*) as count FROM tasks WHERE property_id = ?').get(propertyId);
-    if (existingTasks.count === 0) {
+    const existingTasks = await db.prepare('SELECT COUNT(*) as count FROM tasks WHERE property_id = ?').get(propertyId);
+    if (!existingTasks || existingTasks.count === 0 || existingTasks.count === '0') {
       const taskId = uuidv4();
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO tasks (id, property_id, booking_id, phone, task_request_title, guest_message, task_bucket, action_holder, status, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `).run(taskId, propertyId, bookingId, 'whatsapp:+31630211666',
@@ -503,9 +503,9 @@ router.post('/seed', async (req, res) => {
     }
 
     // Add WiFi FAQ
-    const existingFaq = db.prepare('SELECT id FROM faqs WHERE property_id = ? AND sub_category_name = ?').get(propertyId, 'WiFi');
+    const existingFaq = await db.prepare('SELECT id FROM faqs WHERE property_id = ? AND sub_category_name = ?').get(propertyId, 'WiFi');
     if (!existingFaq) {
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO faqs (property_id, sub_category_name, description, details_json)
         VALUES (?, ?, ?, ?)
       `).run(
@@ -517,11 +517,11 @@ router.post('/seed', async (req, res) => {
     }
 
     // Return seeded data
-    const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(propertyId);
-    const bookings = db.prepare('SELECT * FROM bookings WHERE property_id = ?').all(propertyId);
-    const messages = db.prepare('SELECT * FROM messages WHERE property_id = ?').all(propertyId);
-    const tasks = db.prepare('SELECT * FROM tasks WHERE property_id = ?').all(propertyId);
-    const faqs = db.prepare('SELECT * FROM faqs WHERE property_id = ?').all(propertyId);
+    const property = await db.prepare('SELECT * FROM properties WHERE id = ?').get(propertyId);
+    const bookings = await db.prepare('SELECT * FROM bookings WHERE property_id = ?').all(propertyId);
+    const messages = await db.prepare('SELECT * FROM messages WHERE property_id = ?').all(propertyId);
+    const tasks = await db.prepare('SELECT * FROM tasks WHERE property_id = ?').all(propertyId);
+    const faqs = await db.prepare('SELECT * FROM faqs WHERE property_id = ?').all(propertyId);
 
     res.json({
       message: 'Data seeded successfully',
