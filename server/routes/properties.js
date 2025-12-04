@@ -400,5 +400,142 @@ router.post('/:id/staff', (req, res) => {
   }
 });
 
+// ============================================================================
+// SEED DATA (Temporary - for testing)
+// ============================================================================
+
+/**
+ * POST /api/properties/seed
+ * Seed test data into the database
+ */
+router.post('/seed', async (req, res) => {
+  try {
+    const db = getDb();
+    const propertyData = req.body;
+
+    // Create property ID from the Property Id field or generate one
+    const propertyId = propertyData['Property Id']?.toString() || uuidv4();
+
+    // Check if property exists
+    const existing = db.prepare('SELECT id FROM properties WHERE id = ?').get(propertyId);
+    
+    if (existing) {
+      // Update existing
+      db.prepare(`
+        UPDATE properties SET
+          name = ?, address = ?, host_phone = ?, host_name = ?, details_json = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(
+        propertyData['Property Title'] || propertyData['Internal Name'] || 'Test Property',
+        propertyData['Property Location'] || '',
+        propertyData['Host Phone'] || '',
+        propertyData['Host'] || '',
+        JSON.stringify(propertyData),
+        propertyId
+      );
+    } else {
+      // Insert new
+      db.prepare(`
+        INSERT INTO properties (id, name, address, host_phone, host_name, details_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        propertyId,
+        propertyData['Property Title'] || propertyData['Internal Name'] || 'Test Property',
+        propertyData['Property Location'] || '',
+        propertyData['Host Phone'] || '',
+        propertyData['Host'] || '',
+        JSON.stringify(propertyData)
+      );
+    }
+
+    // Create a test booking
+    const bookingId = uuidv4();
+    const today = new Date();
+    const startDate = today.toISOString().split('T')[0];
+    const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const existingBooking = db.prepare('SELECT id FROM bookings WHERE property_id = ?').get(propertyId);
+    if (!existingBooking) {
+      db.prepare(`
+        INSERT INTO bookings (id, property_id, guest_name, guest_phone, start_date, end_date, details_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        bookingId,
+        propertyId,
+        'Test Guest',
+        'whatsapp:+31630211666',
+        startDate,
+        endDate,
+        JSON.stringify({ platform: propertyData['Platform'] || 'Airbnb' })
+      );
+    }
+
+    // Create sample messages
+    const existingMessages = db.prepare('SELECT COUNT(*) as count FROM messages WHERE property_id = ?').get(propertyId);
+    if (existingMessages.count === 0) {
+      const msgId1 = uuidv4();
+      const msgId2 = uuidv4();
+
+      db.prepare(`
+        INSERT INTO messages (id, property_id, booking_id, from_number, to_number, body, message_type, requestor_role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-1 hour'))
+      `).run(msgId1, propertyId, bookingId, 'whatsapp:+31630211666', 'whatsapp:+14155238886', 
+        'Hi! What is the WiFi password?', 'Inbound', 'Guest');
+
+      db.prepare(`
+        INSERT INTO messages (id, property_id, booking_id, from_number, to_number, body, message_type, requestor_role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-30 minutes'))
+      `).run(msgId2, propertyId, bookingId, 'whatsapp:+14155238886', 'whatsapp:+31630211666',
+        `The WiFi network is "${propertyData['Wifi Network Name'] || 'kaum_villa'}" and the password is "${propertyData['Wifi Password'] || 'balilestari'}". Enjoy your stay!`,
+        'Outbound', 'Host');
+    }
+
+    // Create a sample task
+    const existingTasks = db.prepare('SELECT COUNT(*) as count FROM tasks WHERE property_id = ?').get(propertyId);
+    if (existingTasks.count === 0) {
+      const taskId = uuidv4();
+      db.prepare(`
+        INSERT INTO tasks (id, property_id, booking_id, phone, task_request_title, guest_message, task_bucket, action_holder, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(taskId, propertyId, bookingId, 'whatsapp:+31630211666',
+        'Pool towels request', 'Can we get extra pool towels please?', 'Cleaning', 'Staff', 'Waiting on Staff');
+    }
+
+    // Add WiFi FAQ
+    const existingFaq = db.prepare('SELECT id FROM faqs WHERE property_id = ? AND sub_category_name = ?').get(propertyId, 'WiFi');
+    if (!existingFaq) {
+      db.prepare(`
+        INSERT INTO faqs (property_id, sub_category_name, description, details_json)
+        VALUES (?, ?, ?, ?)
+      `).run(
+        propertyId,
+        'WiFi',
+        `Network: ${propertyData['Wifi Network Name'] || 'kaum_villa'}, Password: ${propertyData['Wifi Password'] || 'balilestari'}`,
+        JSON.stringify({ ssid: propertyData['Wifi Network Name'], password: propertyData['Wifi Password'] })
+      );
+    }
+
+    // Return seeded data
+    const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(propertyId);
+    const bookings = db.prepare('SELECT * FROM bookings WHERE property_id = ?').all(propertyId);
+    const messages = db.prepare('SELECT * FROM messages WHERE property_id = ?').all(propertyId);
+    const tasks = db.prepare('SELECT * FROM tasks WHERE property_id = ?').all(propertyId);
+    const faqs = db.prepare('SELECT * FROM faqs WHERE property_id = ?').all(propertyId);
+
+    res.json({
+      message: 'Data seeded successfully',
+      property,
+      bookings,
+      messages,
+      tasks,
+      faqs
+    });
+  } catch (error) {
+    console.error('[Seed] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 
