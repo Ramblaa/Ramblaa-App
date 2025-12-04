@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Phone, MessageCircle, Send, ArrowLeft, Bot, BotOff, User, CheckSquare, ExternalLink, Search, Loader2 } from 'lucide-react'
+import { Phone, MessageCircle, Send, ArrowLeft, Bot, BotOff, User, CheckSquare, ExternalLink, Search, Loader2, Link2, Calendar } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
@@ -8,6 +8,8 @@ import { Badge } from '../components/ui/badge'
 import { cn } from '../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { messagesApi, tasksApi } from '../lib/api'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 export default function MessagesPage() {
   const navigate = useNavigate()
@@ -21,6 +23,9 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
   const [conversationStates, setConversationStates] = useState({})
+  const [showBookingSelector, setShowBookingSelector] = useState(false)
+  const [availableBookings, setAvailableBookings] = useState([])
+  const [loadingBookings, setLoadingBookings] = useState(false)
 
   // Get display data - prefer loaded meta, fall back to selected conversation
   const displayData = {
@@ -174,6 +179,49 @@ export default function MessagesPage() {
   const isAutoResponseEnabled = selectedConversation ? 
     conversationStates[selectedConversation.id]?.autoResponseEnabled ?? true : 
     false
+
+  // Load available bookings for linking
+  async function loadAvailableBookings() {
+    try {
+      setLoadingBookings(true)
+      // Get all properties first, then get bookings for each
+      const propsRes = await fetch(`${API_BASE_URL}/properties`)
+      const properties = await propsRes.json()
+      
+      let allBookings = []
+      for (const prop of properties) {
+        const bookingsRes = await fetch(`${API_BASE_URL}/properties/${prop.id}/bookings?active=false`)
+        const bookings = await bookingsRes.json()
+        allBookings = [...allBookings, ...bookings.map(b => ({ ...b, propertyName: prop.name }))]
+      }
+      
+      setAvailableBookings(allBookings)
+    } catch (err) {
+      console.error('Failed to load bookings:', err)
+    } finally {
+      setLoadingBookings(false)
+    }
+  }
+
+  // Link conversation to a booking
+  async function linkToBooking(bookingId) {
+    if (!selectedConversation || !bookingId) return
+    
+    try {
+      // Update all messages from this phone to be associated with the booking
+      // This would require a backend endpoint - for now just refresh
+      setShowBookingSelector(false)
+      await loadConversations()
+    } catch (err) {
+      console.error('Failed to link booking:', err)
+    }
+  }
+
+  // Open booking selector
+  function openBookingSelector() {
+    setShowBookingSelector(true)
+    loadAvailableBookings()
+  }
 
   const getSenderBadge = (message) => {
     if (message.sender === 'guest') return null
@@ -357,6 +405,18 @@ export default function MessagesPage() {
                       </>
                     )}
                   </div>
+                  {/* Link to Booking button when no booking associated */}
+                  {!displayData.bookingId && (
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="h-auto p-0 text-xs text-brand-purple"
+                      onClick={openBookingSelector}
+                    >
+                      <Link2 className="h-3 w-3 mr-1" />
+                      Link to Booking
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -478,6 +538,59 @@ export default function MessagesPage() {
           </div>
         )}
       </div>
+
+      {/* Booking Selector Modal */}
+      {showBookingSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-brand-dark">Link to Booking</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowBookingSelector(false)} className="h-8 w-8 p-0">
+                ×
+              </Button>
+            </div>
+            
+            <p className="text-sm text-brand-mid-gray mb-4">
+              Select a booking to associate with this conversation. This helps track messages by guest stay.
+            </p>
+
+            {loadingBookings ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-brand-purple" />
+              </div>
+            ) : availableBookings.length === 0 ? (
+              <div className="text-center py-8 text-brand-mid-gray">
+                No bookings available
+              </div>
+            ) : (
+              <div className="overflow-y-auto flex-1 space-y-2">
+                {availableBookings.map(booking => (
+                  <button
+                    key={booking.id}
+                    onClick={() => linkToBooking(booking.id)}
+                    className="w-full p-3 text-left rounded-lg border hover:border-brand-purple hover:bg-brand-purple/5 transition-colors"
+                  >
+                    <div className="font-medium text-brand-dark">{booking.guestName}</div>
+                    <div className="flex items-center gap-2 text-xs text-brand-mid-gray mt-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>
+                        {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-brand-mid-gray mt-1">{booking.propertyName}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowBookingSelector(false)} className="w-full">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
