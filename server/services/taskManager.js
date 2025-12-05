@@ -801,11 +801,15 @@ async function evaluateRequirementsMet(task, threadContext) {
 /**
  * Use AI to determine if task is COMPLETED or SCHEDULED
  * This handles multiple languages and dynamic phrasing
+ * 
+ * KEY DISTINCTION:
+ * - COMPLETED = Request is RESOLVED (no further action needed by staff)
+ * - SCHEDULED = Staff will perform a PHYSICAL ACTION at a future time
  */
 async function evaluateTaskCompletionStatus(task, threadContext, staffMessage) {
-  const prompt = `You are evaluating a staff response to determine the task status.
+  const prompt = `You are evaluating a staff response to determine task status.
 
-TASK: ${task.task_bucket || task.action_title || 'Guest request'}
+TASK TYPE: ${task.task_bucket || task.action_title || 'Guest request'}
 
 STAFF'S LATEST MESSAGE:
 ${staffMessage}
@@ -813,13 +817,26 @@ ${staffMessage}
 THREAD CONTEXT:
 ${threadContext}
 
-Based on the staff's message, determine the status. The staff may write in ANY language.
+CRITICAL DISTINCTION - Use reasonable judgment:
 
-Return EXACTLY one of these words (no other text):
-- COMPLETED - if staff indicates the task is DONE/FINISHED/DELIVERED right now
-- SCHEDULED - if staff confirms a future time/schedule but hasn't done it yet
-- IN_PROGRESS - if staff acknowledges but hasn't confirmed completion or schedule
-- ESCALATED - if staff says they CANNOT complete the task (out of stock, unavailable, need approval, etc.)
+**COMPLETED** = The request is RESOLVED. Use for:
+- Approval/permission granted (e.g., "Yes you can check-in at 11am", "Early check-in is fine")
+- Information confirmed (e.g., "The code is 1234", "Yes that's available")
+- Physical task already done (e.g., "Towels delivered", "Pool cleaned", "Fixed it")
+- Simple confirmations that don't require future physical action
+
+**SCHEDULED** = Staff will perform a PHYSICAL ACTION later. Use ONLY for:
+- Delivery tasks with future time (e.g., "I'll bring towels at 9am tomorrow")
+- Maintenance scheduled (e.g., "Technician coming at 2pm")
+- Physical work to be done (e.g., "I'll clean the pool this afternoon")
+
+**IN_PROGRESS** = Staff acknowledged but hasn't confirmed resolution or schedule
+
+**ESCALATED** = Staff CANNOT complete the task (unavailable, need approval, etc.)
+
+The staff may write in ANY language. Apply common sense.
+
+Return EXACTLY one word: COMPLETED, SCHEDULED, IN_PROGRESS, or ESCALATED
 
 Answer:`;
 
