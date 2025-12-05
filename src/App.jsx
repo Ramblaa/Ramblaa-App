@@ -10,6 +10,7 @@ import ResourcesPage from './pages/ResourcesPage'
 import PropertiesPage from './pages/PropertiesPage'
 import StaffPage from './pages/StaffPage'
 import BookingsPage from './pages/BookingsPage'
+import ScheduledMessagesPage from './pages/ScheduledMessagesPage'
 import SettingsPage from './pages/SettingsPage'
 import SandboxPage from './pages/SandboxPage'
 import Layout from './components/Layout'
@@ -63,6 +64,7 @@ function AppContent() {
                 <Route path="/properties" element={<PropertiesPage />} />
                 <Route path="/bookings" element={<BookingsPage />} />
                 <Route path="/staff" element={<StaffPage />} />
+                <Route path="/scheduled" element={<ScheduledMessagesPage />} />
                 <Route path="/contacts" element={<Navigate to="/staff" replace />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Routes>

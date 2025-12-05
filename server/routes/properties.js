@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDbWithPrepare as getDb } from '../db/index.js';
+import { onBookingCreated, onBookingUpdated, onBookingCancelled } from '../services/scheduleService.js';
 
 const router = Router();
 
@@ -262,6 +263,31 @@ router.post('/:id/bookings', async (req, res) => {
     );
 
     const booking = await db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+    
+    // Get property name for scheduled messages
+    const property = await db.prepare('SELECT name FROM properties WHERE id = ?').get(propertyId);
+    
+    // Trigger scheduled message evaluation for new booking
+    if (guestPhone) {
+      try {
+        const bookingWithDetails = {
+          ...booking,
+          property_id: propertyId,
+          guest_name: guestName,
+          guest_phone: guestPhone,
+          start_date: startDate,
+          end_date: endDate,
+          property_name: property?.name || '',
+        };
+        
+        const scheduleResult = await onBookingCreated(bookingWithDetails);
+        console.log(`[Bookings] Scheduled ${scheduleResult.queued} messages for new booking ${id}`);
+      } catch (scheduleError) {
+        console.error('[Bookings] Failed to schedule messages:', scheduleError.message);
+        // Don't fail the booking creation if scheduling fails
+      }
+    }
+    
     res.status(201).json(booking);
   } catch (error) {
     console.error('[Bookings] Create error:', error);
@@ -284,6 +310,10 @@ router.put('/:id/bookings/:bookingId', async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
+    // Check if dates changed
+    const datesChanged = (startDate && startDate !== existing.start_date) || 
+                         (endDate && endDate !== existing.end_date);
+
     await db.prepare(`
       UPDATE bookings 
       SET guest_name = ?, guest_phone = ?, guest_email = ?, start_date = ?, end_date = ?, details_json = ?
@@ -299,6 +329,28 @@ router.put('/:id/bookings/:bookingId', async (req, res) => {
     );
 
     const updated = await db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
+    
+    // If dates changed, recalculate scheduled message times
+    if (datesChanged) {
+      try {
+        const property = await db.prepare('SELECT name FROM properties WHERE id = ?').get(propertyId);
+        const bookingWithDetails = {
+          ...updated,
+          property_id: propertyId,
+          guest_name: updated.guest_name,
+          guest_phone: updated.guest_phone,
+          start_date: updated.start_date,
+          end_date: updated.end_date,
+          property_name: property?.name || '',
+        };
+        
+        const scheduleResult = await onBookingUpdated(bookingWithDetails);
+        console.log(`[Bookings] Updated ${scheduleResult.updated} scheduled messages for booking ${bookingId}`);
+      } catch (scheduleError) {
+        console.error('[Bookings] Failed to update scheduled messages:', scheduleError.message);
+      }
+    }
+    
     res.json({
       id: updated.id,
       propertyId: updated.property_id,
@@ -328,6 +380,14 @@ router.delete('/:id/bookings/:bookingId', async (req, res) => {
     const existing = await db.prepare('SELECT * FROM bookings WHERE id = ? AND property_id = ?').get(bookingId, propertyId);
     if (!existing) {
       return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Cancel any pending scheduled messages before deleting the booking
+    try {
+      const scheduleResult = await onBookingCancelled(bookingId);
+      console.log(`[Bookings] Cancelled ${scheduleResult.cancelled} scheduled messages for deleted booking ${bookingId}`);
+    } catch (scheduleError) {
+      console.error('[Bookings] Failed to cancel scheduled messages:', scheduleError.message);
     }
 
     await db.prepare('DELETE FROM bookings WHERE id = ?').run(bookingId);

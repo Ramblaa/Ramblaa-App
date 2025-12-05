@@ -41,6 +41,9 @@ export async function initDatabase() {
   try {
     await client.query(schema);
     console.log('[DB] Schema initialized');
+    
+    // Run migrations
+    await runMigrations(client);
   } catch (error) {
     // Tables might already exist, that's OK
     if (!error.message.includes('already exists')) {
@@ -51,6 +54,51 @@ export async function initDatabase() {
   }
 
   return pool;
+}
+
+/**
+ * Run database migrations
+ */
+async function runMigrations(client) {
+  try {
+    // Migration 1: Add priority column to tasks if it doesn't exist
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'tasks' AND column_name = 'priority') THEN
+          ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'medium';
+        END IF;
+      END $$;
+    `);
+    
+    // Migration 2: Set all existing tasks without priority to 'low'
+    const result = await client.query(`
+      UPDATE tasks SET priority = 'low' WHERE priority IS NULL OR priority = ''
+    `);
+    if (result.rowCount > 0) {
+      console.log(`[DB] Migration: Updated ${result.rowCount} tasks with default priority 'low'`);
+    }
+    
+    // Migration 3: Add content_sid and content_variables to messages table
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'messages' AND column_name = 'content_sid') THEN
+          ALTER TABLE messages ADD COLUMN content_sid TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'messages' AND column_name = 'content_variables') THEN
+          ALTER TABLE messages ADD COLUMN content_variables TEXT;
+        END IF;
+      END $$;
+    `);
+    
+    console.log('[DB] Migrations completed');
+  } catch (error) {
+    console.error('[DB] Migration error:', error.message);
+  }
 }
 
 export async function closeDatabase() {

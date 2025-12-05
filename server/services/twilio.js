@@ -84,6 +84,120 @@ export async function sendWhatsAppMessage({
 }
 
 /**
+ * Send a WhatsApp template message via Twilio ContentSid
+ * Used for scheduled/automated messages with Meta-approved templates
+ * 
+ * @param {Object} options
+ * @param {string} options.to - Recipient phone number
+ * @param {string} options.from - Sender number (optional, uses default)
+ * @param {string} options.contentSid - Twilio ContentSid for the template (e.g., HX1234abc...)
+ * @param {Object} options.contentVariables - Variables to fill in the template
+ * @param {Object} options.metadata - Additional metadata for logging
+ * @returns {Object} - { success, messageSid, error }
+ */
+export async function sendTemplateMessage({
+  to,
+  from = null,
+  contentSid,
+  contentVariables = {},
+  metadata = {},
+}) {
+  const client = getClient();
+  
+  if (!client) {
+    console.error('[Twilio] Client not configured');
+    return { success: false, messageSid: null, error: 'Twilio not configured' };
+  }
+
+  if (!contentSid) {
+    console.error('[Twilio] No ContentSid provided');
+    return { success: false, messageSid: null, error: 'No ContentSid provided' };
+  }
+
+  const fromNumber = from || config.twilio.whatsappNumber;
+  const toFormatted = formatForWhatsApp(fromNumber, to);
+
+  try {
+    const message = await client.messages.create({
+      from: fromNumber,
+      to: toFormatted,
+      contentSid: contentSid,
+      contentVariables: JSON.stringify(contentVariables),
+    });
+
+    console.log(`[Twilio] Sent template ${contentSid} → ${message.sid} to ${toFormatted}`);
+
+    // Log to messages table
+    await logScheduledMessage({
+      messageSid: message.sid,
+      from: fromNumber,
+      to: toFormatted,
+      contentSid,
+      contentVariables,
+      ...metadata,
+    });
+
+    return { success: true, messageSid: message.sid, error: null };
+  } catch (error) {
+    console.error('[Twilio] Template send error:', error.message);
+    return { success: false, messageSid: null, error: error.message };
+  }
+}
+
+/**
+ * Log scheduled/template message to database
+ * Includes task_action='scheduled' and content_sid for querying
+ */
+async function logScheduledMessage({
+  messageSid,
+  from,
+  to,
+  contentSid,
+  contentVariables,
+  propertyId,
+  bookingId,
+  templateName,
+  ruleId,
+  scheduledMessageId,
+}) {
+  const db = getDb();
+  const id = messageSid || uuidv4();
+
+  try {
+    // Create a body description for logging
+    const bodyDescription = `[Scheduled: ${templateName || 'Template'}] Variables: ${JSON.stringify(contentVariables)}`;
+
+    // Store ContentSid in reference_message_ids for tracking/querying
+    const contentSidRef = contentSid ? `ContentSid:${contentSid}` : null;
+
+    await db.prepare(`
+      INSERT INTO messages (
+        id, from_number, to_number, body, message_type, requestor_role,
+        property_id, booking_id, task_action, reference_message_ids,
+        content_sid, content_variables, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(
+      id,
+      from,
+      to,
+      bodyDescription,
+      'Scheduled',           // message_type = Scheduled
+      'Rambley',
+      propertyId || null,
+      bookingId || null,
+      'scheduled',           // task_action = 'scheduled' for querying
+      contentSidRef,         // reference_message_ids = "ContentSid:HX..."
+      contentSid || null,    // Also store raw content_sid
+      contentVariables ? JSON.stringify(contentVariables) : null
+    );
+    
+    console.log(`[Twilio] Logged scheduled message ${id} (ContentSid: ${contentSid})`);
+  } catch (error) {
+    console.error('[Twilio] Failed to log scheduled message:', error.message);
+  }
+}
+
+/**
  * Send multiple messages individually (one per intent)
  * NO CONSOLIDATION - each intent gets its own message
  * 
@@ -250,6 +364,7 @@ export async function fetchTwilioMedia(mediaUrl) {
 
 export default {
   sendWhatsAppMessage,
+  sendTemplateMessage,
   sendIndividualMessages,
   sendToWebhook,
   getDefaultFrom,

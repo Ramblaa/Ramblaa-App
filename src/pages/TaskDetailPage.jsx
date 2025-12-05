@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Send, Bot, BotOff, UserCircle, Users, User, MessageCircle, Clock, MapPin, Calendar, Loader2 } from 'lucide-react'
+import { ArrowLeft, Send, Bot, BotOff, UserCircle, Users, User, MessageCircle, Clock, MapPin, Calendar, Loader2, ChevronDown, AlertCircle } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardContent } from '../components/ui/card'
@@ -8,6 +8,21 @@ import { Badge } from '../components/ui/badge'
 import { cn } from '../lib/utils'
 import { useParams, useNavigate } from 'react-router-dom'
 import { tasksApi, messagesApi, staffApi } from '../lib/api'
+
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'in-progress', label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
+  { value: 'scheduled', label: 'Scheduled', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'completed', label: 'Completed', color: 'bg-green-100 text-green-700' },
+  { value: 'escalated', label: 'Escalated', color: 'bg-red-100 text-red-700' },
+]
+
+const PRIORITY_OPTIONS = [
+  { value: 'low', label: 'Low', color: 'bg-gray-100 text-gray-600' },
+  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700' },
+  { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-700' },
+]
 
 const typeIcons = {
   cleaning: 'bg-blue-100 text-blue-600',
@@ -43,11 +58,31 @@ export default function TaskDetailPage() {
   const [staffList, setStaffList] = useState([])
   const [showStaffSelector, setShowStaffSelector] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false)
+  const [updating, setUpdating] = useState(false)
 
   // Ref for scrolling to latest message
   const messagesEndRef = useRef(null)
   // Track if this is the initial load for the conversation
   const isInitialLoad = useRef(true)
+  // Refs for dropdown click-outside handling
+  const statusDropdownRef = useRef(null)
+  const priorityDropdownRef = useRef(null)
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setShowStatusDropdown(false)
+      }
+      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(event.target)) {
+        setShowPriorityDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Scroll to bottom of messages
   const scrollToBottom = (instant = false) => {
@@ -81,6 +116,22 @@ export default function TaskDetailPage() {
       setStaffList(staff)
     } catch (err) {
       console.error('Failed to load staff:', err)
+    }
+  }
+
+  // Update task status or priority
+  async function handleUpdateTask(updates) {
+    try {
+      setUpdating(true)
+      await tasksApi.updateTask(taskId, updates)
+      setShowStatusDropdown(false)
+      setShowPriorityDropdown(false)
+      // Reload task to get updated data
+      await loadTask()
+    } catch (err) {
+      console.error('Failed to update task:', err)
+    } finally {
+      setUpdating(false)
     }
   }
 
@@ -299,7 +350,7 @@ export default function TaskDetailPage() {
       </div>
     )
   }
-
+  
   if (!task) {
     return (
       <div className="p-6">
@@ -326,16 +377,16 @@ export default function TaskDetailPage() {
     
     try {
       setSending(true)
-      
-      // When sending a message, disable auto-response for this conversation
-      setConversationStates(prev => ({
-        ...prev,
-        [selectedConversation.id]: {
-          ...prev[selectedConversation.id],
-          autoResponseEnabled: false
-        }
-      }))
-      
+    
+    // When sending a message, disable auto-response for this conversation
+    setConversationStates(prev => ({
+      ...prev,
+      [selectedConversation.id]: {
+        ...prev[selectedConversation.id],
+        autoResponseEnabled: false
+      }
+    }))
+    
       // Send via API if we have a phone
       if (selectedConversation.phone) {
         await messagesApi.sendMessage({
@@ -360,7 +411,7 @@ export default function TaskDetailPage() {
         setSelectedConversation(updatedTask.conversations[convIdx])
       }
       
-      setNewMessage('')
+    setNewMessage('')
     } catch (err) {
       console.error('Failed to send message:', err)
     } finally {
@@ -427,9 +478,81 @@ export default function TaskDetailPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-lg font-bold text-brand-dark">{task.title}</h1>
-                <Badge className={`text-xs ${statusInfo.color}`}>
+                
+                {/* Status Dropdown */}
+                <div className="relative" ref={statusDropdownRef}>
+                  <button
+                    onClick={() => {
+                      setShowStatusDropdown(!showStatusDropdown)
+                      setShowPriorityDropdown(false)
+                    }}
+                    disabled={updating}
+                    className={cn(
+                      "text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-colors",
+                      statusInfo.color,
+                      "hover:opacity-80 cursor-pointer"
+                    )}
+                  >
                   {statusInfo.label}
-                </Badge>
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  
+                  {showStatusDropdown && (
+                    <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border z-50 min-w-32">
+                      {STATUS_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handleUpdateTask({ status: option.value })}
+                          className={cn(
+                            "w-full px-3 py-2 text-left text-xs hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg flex items-center gap-2",
+                            task.status === option.value && "bg-gray-50"
+                          )}
+                        >
+                          <span className={cn("w-2 h-2 rounded-full", option.color.replace('text-', 'bg-').split(' ')[0])} />
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Priority Dropdown */}
+                <div className="relative" ref={priorityDropdownRef}>
+                  <button
+                    onClick={() => {
+                      setShowPriorityDropdown(!showPriorityDropdown)
+                      setShowStatusDropdown(false)
+                    }}
+                    disabled={updating}
+                    className={cn(
+                      "text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-colors",
+                      PRIORITY_OPTIONS.find(p => p.value === task.priority)?.color || 'bg-gray-100 text-gray-600',
+                      "hover:opacity-80 cursor-pointer"
+                    )}
+                  >
+                    <AlertCircle className="h-3 w-3" />
+                    {PRIORITY_OPTIONS.find(p => p.value === task.priority)?.label || 'Priority'}
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  
+                  {showPriorityDropdown && (
+                    <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border z-50 min-w-32">
+                      {PRIORITY_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handleUpdateTask({ priority: option.value })}
+                          className={cn(
+                            "w-full px-3 py-2 text-left text-xs hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg flex items-center gap-2",
+                            task.priority === option.value && "bg-gray-50"
+                          )}
+                        >
+                          <span className={cn("w-2 h-2 rounded-full", option.color.replace('text-', 'bg-').split(' ')[0])} />
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-brand-mid-gray mt-1">{task.description}</p>
               
@@ -441,7 +564,7 @@ export default function TaskDetailPage() {
                 <div className="flex items-center gap-1">
                   <User className="h-3 w-3" />
                   {task.assignee && task.assignee !== 'Unassigned' ? (
-                    <span>{task.assignee}</span>
+                  <span>{task.assignee}</span>
                   ) : (
                     <button
                       onClick={() => {
@@ -455,10 +578,10 @@ export default function TaskDetailPage() {
                   )}
                 </div>
                 {task.dueDate && (
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
                     <span>{task.dueDate} {task.dueTime ? `at ${task.dueTime}` : ''}</span>
-                  </div>
+                </div>
                 )}
               </div>
             </div>
@@ -519,7 +642,7 @@ export default function TaskDetailPage() {
                       <p className="text-xs text-brand-mid-gray">{conversation.lastActivity}</p>
                       <div className="flex items-center gap-1">
                         {guestCount > 0 && (
-                          <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs">
                             <UserCircle className="h-3 w-3 mr-1" />{guestCount}
                           </Badge>
                         )}
@@ -531,7 +654,7 @@ export default function TaskDetailPage() {
                         {hostCount > 0 && (
                           <Badge className="text-xs bg-brand-purple text-white">
                             <Bot className="h-3 w-3 mr-1" />{hostCount}
-                          </Badge>
+                      </Badge>
                         )}
                       </div>
                     </div>
@@ -623,24 +746,24 @@ export default function TaskDetailPage() {
                   const isInbound = message.sender === 'guest' || message.sender === 'staff'
                   
                   return (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className={cn(
-                        "flex",
+                    className={cn(
+                      "flex",
                         isInbound ? "justify-start" : "justify-end",
-                        message.isSystemMessage && "opacity-60 justify-center"
-                      )}
-                    >
-                      {message.isSystemMessage ? (
-                        <div className="bg-gray-100 text-gray-600 italic text-sm px-3 py-2 rounded-lg max-w-md text-center">
-                          {message.text}
-                        </div>
-                      ) : (
-                        <div className={cn(
-                          "max-w-xs lg:max-w-md",
+                      message.isSystemMessage && "opacity-60 justify-center"
+                    )}
+                  >
+                    {message.isSystemMessage ? (
+                      <div className="bg-gray-100 text-gray-600 italic text-sm px-3 py-2 rounded-lg max-w-md text-center">
+                        {message.text}
+                      </div>
+                    ) : (
+                      <div className={cn(
+                        "max-w-xs lg:max-w-md",
                           isInbound ? "mr-12" : "ml-12"
                         )}>
                           {/* Sender badge - show for all messages */}
@@ -669,29 +792,29 @@ export default function TaskDetailPage() {
                               )}
                             </div>
                           </div>
-                          <div className={cn(
-                            "px-4 py-2 rounded-lg",
-                            message.sender === 'guest'
+                        <div className={cn(
+                          "px-4 py-2 rounded-lg",
+                          message.sender === 'guest'
                               ? "bg-brand-vanilla text-brand-dark"
                               : message.sender === 'staff'
                                 ? "bg-orange-100 text-orange-900 border border-orange-200"  // Staff = orange
                                 : "bg-brand-purple text-white"  // Host/Rambley = purple
-                          )}>
-                            <p className="text-sm">{message.text}</p>
-                            <p className={cn(
-                              "text-xs mt-1",
-                              message.sender === 'guest'
+                        )}>
+                          <p className="text-sm">{message.text}</p>
+                          <p className={cn(
+                            "text-xs mt-1",
+                            message.sender === 'guest'
                                 ? "text-brand-mid-gray"
                                 : message.sender === 'staff'
                                   ? "text-orange-600"
                                   : "text-white/70"
-                            )}>
-                              {message.timestamp}
-                            </p>
-                          </div>
+                          )}>
+                            {message.timestamp}
+                          </p>
                         </div>
-                      )}
-                    </motion.div>
+                      </div>
+                    )}
+                  </motion.div>
                   )
                 })}
               </AnimatePresence>
@@ -721,7 +844,7 @@ export default function TaskDetailPage() {
                   {sending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Send className="h-4 w-4" />
+                  <Send className="h-4 w-4" />
                   )}
                 </Button>
               </form>
@@ -800,7 +923,7 @@ export default function TaskDetailPage() {
       )}
     </div>
   )
-}
+} 
 
 // Mock task for fallback
 function getMockTask(taskId) {

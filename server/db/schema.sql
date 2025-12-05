@@ -110,13 +110,15 @@ CREATE TABLE IF NOT EXISTS messages (
   to_number TEXT NOT NULL,
   body TEXT,
   media_url TEXT,
-  message_type TEXT DEFAULT 'Inbound',
+  message_type TEXT DEFAULT 'Inbound',  -- Inbound, Outbound, Scheduled
   requestor_role TEXT,
   staff_id TEXT,
-  reference_message_ids TEXT,
+  reference_message_ids TEXT,           -- For scheduled: "ContentSid:HX..." for tracking
   reference_task_ids TEXT,
-  task_action TEXT,  -- 'created' or 'updated' to show correct label in UI
+  task_action TEXT,                      -- 'created', 'updated', or 'scheduled'
   ai_enrichment_id TEXT,
+  content_sid TEXT,                      -- Twilio ContentSid for scheduled messages
+  content_variables TEXT,                -- JSON of template variables used
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (booking_id) REFERENCES bookings(id),
   FOREIGN KEY (property_id) REFERENCES properties(id)
@@ -232,6 +234,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   completion_notified INTEGER DEFAULT 0,
   message_chain_ids TEXT,
   ongoing_conversation TEXT,
+  priority TEXT DEFAULT 'medium',  -- low, medium, high, urgent
   scheduled_at TIMESTAMP,
   completed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -302,3 +305,93 @@ CREATE INDEX IF NOT EXISTS idx_ai_logs_status ON ai_logs(status);
 CREATE INDEX IF NOT EXISTS idx_ai_logs_recipient ON ai_logs(recipient_type);
 
 CREATE INDEX IF NOT EXISTS idx_summarized_status ON summarized_logs(status);
+
+-- ============================================================
+-- SCHEDULED MESSAGES SYSTEM
+-- ============================================================
+
+-- Message Templates (reusable Twilio templates)
+CREATE TABLE IF NOT EXISTS message_templates (
+  id TEXT PRIMARY KEY,
+  property_id TEXT NOT NULL,
+  name TEXT NOT NULL,                          -- "Welcome Message", "Pre-Arrival Info"
+  content_sid TEXT,                            -- Twilio template ID (e.g., HX1234abc...)
+  fallback_body TEXT,                          -- Fallback message if not using template
+  variables_schema TEXT,                       -- JSON array: ["guest_name", "check_in_date"]
+  is_active INTEGER DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (property_id) REFERENCES properties(id)
+);
+
+-- Schedule Rules (when to send which template)
+CREATE TABLE IF NOT EXISTS message_schedule_rules (
+  id TEXT PRIMARY KEY,
+  property_id TEXT NOT NULL,
+  template_id TEXT NOT NULL,
+  name TEXT NOT NULL,                          -- "Welcome on Booking", "3-Day Pre-Arrival"
+  
+  -- Trigger Configuration
+  trigger_type TEXT NOT NULL,                  -- ON_BOOKING_CREATED, DAYS_BEFORE_CHECKIN, etc.
+  trigger_offset_days INTEGER DEFAULT 0,       -- +3 = 3 days after, -3 = 3 days before
+  trigger_time TIME DEFAULT '09:00:00',        -- Time of day to send (for date-based triggers)
+  
+  -- Conditions (optional)
+  min_stay_nights INTEGER,                     -- Only send if booking >= X nights
+  platform_filter TEXT,                        -- JSON array: ["Airbnb", "VRBO"]
+  
+  priority INTEGER DEFAULT 100,                -- Lower = higher priority
+  is_active INTEGER DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (property_id) REFERENCES properties(id),
+  FOREIGN KEY (template_id) REFERENCES message_templates(id)
+);
+
+-- Scheduled Messages Queue (pending/sent messages)
+CREATE TABLE IF NOT EXISTS scheduled_messages (
+  id TEXT PRIMARY KEY,
+  booking_id TEXT NOT NULL,
+  property_id TEXT NOT NULL,
+  template_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  
+  -- Recipient
+  to_number TEXT NOT NULL,
+  guest_name TEXT,
+  
+  -- Scheduling
+  scheduled_for TIMESTAMP NOT NULL,
+  
+  -- Status Tracking
+  status TEXT DEFAULT 'pending',               -- pending, sent, failed, cancelled
+  sent_at TIMESTAMP,
+  message_sid TEXT,                            -- Twilio SID after sending
+  error_message TEXT,
+  retry_count INTEGER DEFAULT 0,
+  
+  -- Variables snapshot (frozen at queue time)
+  variables_json TEXT,
+  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (booking_id) REFERENCES bookings(id),
+  FOREIGN KEY (property_id) REFERENCES properties(id),
+  FOREIGN KEY (template_id) REFERENCES message_templates(id),
+  FOREIGN KEY (rule_id) REFERENCES message_schedule_rules(id)
+);
+
+-- Unique constraint to prevent duplicate scheduled messages per booking+rule
+CREATE UNIQUE INDEX IF NOT EXISTS idx_scheduled_unique_booking_rule 
+ON scheduled_messages(booking_id, rule_id);
+
+-- Indexes for scheduled messages
+CREATE INDEX IF NOT EXISTS idx_scheduled_status_time ON scheduled_messages(status, scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_scheduled_booking ON scheduled_messages(booking_id);
+CREATE INDEX IF NOT EXISTS idx_scheduled_property ON scheduled_messages(property_id);
+
+-- Indexes for templates and rules
+CREATE INDEX IF NOT EXISTS idx_templates_property ON message_templates(property_id);
+CREATE INDEX IF NOT EXISTS idx_rules_property ON message_schedule_rules(property_id);
+CREATE INDEX IF NOT EXISTS idx_rules_template ON message_schedule_rules(template_id);

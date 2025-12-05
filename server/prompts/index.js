@@ -502,32 +502,37 @@ Thread context (guest & staff, oldest → newest):
 {{THREAD_CONTEXT}}
 
 Write ONLY in {{LANG}}.
-Style: neutral and professional; no emojis; no names; no greeting or sign-off. Max 3 sentences (aim for 1–2 if fully completed).
+Style: neutral and professional; no emojis; no names; no greeting or sign-off. Max 2 sentences (aim for 1 if simple).
 Include only details directly relevant to {{TASK_SCOPE}} (e.g., times, quantities, access notes) when present.
 
-Decision logic (use the most recent Staff — Inbound in the thread):
-- If that message clearly indicates the task is completed ("done", "finished", "delivered", "installed", "changed", "resolved", etc.), inform the guest it's completed using natural phrasing.
-- If that message proposes or confirms a future time, repeat the time **exactly as written** (no timezone math/reformatting) and confirm we'll follow through then.
-- If status is ambiguous, default to a scheduled/confirmation style (e.g., "We've scheduled this and will confirm once completed.").
+CRITICAL - Distinguish request types:
+
+**APPROVAL/PERMISSION REQUESTS** (e.g., early check-in, late check-out, special access):
+- If staff APPROVED → Confirm the approval directly (e.g., "You can check in at 11am.")
+- Do NOT say "we've scheduled this" - approval doesn't need scheduling
+- Do NOT say "we'll confirm once completed" - approval IS the completion
+
+**PHYSICAL DELIVERY/ACTION TASKS** (e.g., towels, cleaning, repairs):
+- If staff has DONE IT → Confirm completion (e.g., "Fresh towels have been delivered.")
+- If staff WILL DO IT at a future time → Confirm the time (e.g., "Fresh towels will be brought at 9am tomorrow.")
+
+Decision logic (use the most recent Staff — Inbound):
+1. Identify if this is an APPROVAL request or a PHYSICAL ACTION request
+2. For approvals: Staff saying "yes", "that's fine", "you can", "11am works" = RESOLVED
+3. For physical actions: Staff confirming future delivery = scheduled; staff confirming done = completed
+4. Repeat times/details exactly as staff wrote them
 
 Scope guard:
-- Reply **only** about **{{TASK_SCOPE}}**. Omit unrelated items from the thread (e.g., Wi-Fi, address, directions) unless they are explicitly part of **{{TASK_SCOPE}}** right now.
-- Do not invent or guess details; only use what appears in the thread/context. If unsure, use the scheduled/confirmation style.
+- Reply **only** about **{{TASK_SCOPE}}**. 
+- Do not invent or guess details; only use what appears in the thread.
 
 Time handling:
-- Treat relative phrases ("tomorrow", "this evening", "after 3pm", "between 9–11", "morning", etc.) as valid windows.
-- If the guest said "any time / whenever / no preference," consider the time requirement satisfied—do not re-ask—and confirm accordingly.
-- When repeating a time, use the exact phrasing from the latest relevant message.
-- Treat "ASAP / as soon as possible / now / immediately" as a valid immediate window.
-
-
-Recency & conflicts:
-- Prefer the **latest Staff — Inbound**. If a newer Guest message changes timing but staff hasn't reconfirmed, acknowledge the requested time and state we'll confirm once staff reconfirms.
-- If older updates conflict with newer ones, the newer message prevails.
+- Treat relative phrases ("tomorrow", "this evening", "after 3pm") as valid.
+- Repeat the exact time/window from staff's message.
 
 Safety & privacy:
 - Do not include sensitive codes/keys or internal process details.
-- Do not mention staff names or internal tooling.
+- Do not mention staff names.
 
 Return ONLY the message body (no metadata).
 `;

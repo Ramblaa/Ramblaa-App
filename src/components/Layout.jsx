@@ -15,7 +15,8 @@ import {
   PlayCircle,
   User,
   Calendar,
-  UserCog
+  UserCog,
+  Clock
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { useAuth } from '../contexts/AuthContext'
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Resources', href: '/resources', icon: Layers },
   { name: 'Properties', href: '/properties', icon: Building2 },
   { name: 'Bookings', href: '/bookings', icon: Calendar },
+  { name: 'Scheduled', href: '/scheduled', icon: Clock },
   { name: 'Staff', href: '/staff', icon: UserCog },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
