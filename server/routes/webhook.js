@@ -12,36 +12,8 @@ import { canonPhoneTokens, normalizeWhatsAppPhone } from '../utils/phoneUtils.js
 import { processInboundMessage } from '../services/messageProcessor.js';
 import { createTasksFromAiLogs, processTaskWorkflow } from '../services/taskManager.js';
 import { sendToWebhook, fetchTwilioMedia } from '../services/twilio.js';
-import { config } from '../config/env.js';
 
 const router = Router();
-
-/**
- * Forward webhook to mirror URLs for multi-environment testing
- * Non-blocking, fire-and-forget
- */
-function forwardToMirrors(payload) {
-  const mirrorUrls = config.webhookMirrorUrls || [];
-  
-  if (mirrorUrls.length === 0) return;
-  
-  console.log(`[Webhook] Forwarding to ${mirrorUrls.length} mirror(s): ${mirrorUrls.join(', ')}`);
-  
-  // Fire-and-forget - don't await, just log any errors
-  for (const url of mirrorUrls) {
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(payload).toString(),
-    })
-      .then(res => {
-        console.log(`[Webhook Mirror] Forwarded to ${url}: ${res.status}`);
-      })
-      .catch(err => {
-        console.error(`[Webhook Mirror] Failed to forward to ${url}:`, err.message);
-      });
-  }
-}
 
 /**
  * POST /api/webhook/twilio
@@ -51,9 +23,6 @@ router.post('/twilio', async (req, res) => {
   try {
     const params = req.body;
     console.log('[Webhook] Received:', JSON.stringify(params));
-
-    // Forward to mirror environments for multi-env testing (async, non-blocking)
-    forwardToMirrors(params);
 
     const from = normalizeWhatsAppPhone(params.From);
     const to = normalizeWhatsAppPhone(params.To);

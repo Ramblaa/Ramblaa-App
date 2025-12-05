@@ -131,6 +131,18 @@ app.get('/api/version', (req, res) => {
   });
 });
 
+// Config endpoint for environment verification (no secrets exposed)
+app.get('/api/config', (req, res) => {
+  res.json({
+    environment: process.env.NODE_ENV || 'development',
+    twilioNumber: config.twilio.whatsappNumber || 'NOT_CONFIGURED',
+    twilioConfigured: !!(config.twilio.accountSid && config.twilio.authToken),
+    openaiConfigured: !!config.openai.apiKey,
+    databaseConfigured: !!config.database.url,
+    version: BUILD_VERSION,
+  });
+});
+
 // Initialize database and start server
 async function start() {
   try {
@@ -177,16 +189,16 @@ async function start() {
       console.log(`[Server] VERSION: ${BUILD_VERSION}`);
       console.log(`[Server] BUILD TIME: ${BUILD_TIMESTAMP}`);
       console.log('========================================');
+      console.log('[Config] Environment:', process.env.NODE_ENV || 'development');
+      console.log('[Config] Twilio WhatsApp Number:', config.twilio.whatsappNumber || '⚠️ NOT SET');
+      console.log('[Config] Twilio Account:', config.twilio.accountSid ? `${config.twilio.accountSid.slice(0, 8)}...` : '⚠️ NOT SET');
+      console.log('[Config] OpenAI:', config.openai.apiKey ? '✓ Configured' : '⚠️ NOT SET');
+      console.log('[Config] Database:', config.database.url ? '✓ Configured' : '⚠️ NOT SET');
+      console.log('========================================');
       console.log(`[Server] Running on ${host}:${port}`);
       console.log(`[Server] Environment: ${config.server.nodeEnv}`);
       console.log(`[Server] CORS origin: ${config.server.corsOrigin}`);
       console.log(`[Server] Scheduled message cron jobs: ACTIVE`);
-      if (config.server.dryRunMode) {
-        console.log('========================================');
-        console.log('[Server] ⚠️  DRY RUN MODE ENABLED');
-        console.log('[Server] Outbound messages will be LOGGED but NOT SENT');
-        console.log('========================================');
-      }
     });
   } catch (error) {
     console.error('[Server] Failed to start:', error);
