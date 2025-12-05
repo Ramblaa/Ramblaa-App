@@ -116,19 +116,26 @@ export default function MessagesPage() {
     }
   }
 
-  // Filter conversations based on search query
-  const filteredConversations = conversations.filter(conversation => {
-    if (!searchQuery.trim()) return true
-    
-    const query = searchQuery.toLowerCase()
-    
-    if (conversation.guestName?.toLowerCase().includes(query)) return true
-    if (conversation.phone?.replace(/\D/g, '').includes(query.replace(/\D/g, ''))) return true
-    if (conversation.property?.toLowerCase().includes(query)) return true
-    if (conversation.lastMessage?.toLowerCase().includes(query)) return true
-    
-    return false
-  })
+  // Filter and sort conversations - most recent first
+  const filteredConversations = conversations
+    .filter(conversation => {
+      if (!searchQuery.trim()) return true
+      
+      const query = searchQuery.toLowerCase()
+      
+      if (conversation.guestName?.toLowerCase().includes(query)) return true
+      if (conversation.phone?.replace(/\D/g, '').includes(query.replace(/\D/g, ''))) return true
+      if (conversation.property?.toLowerCase().includes(query)) return true
+      if (conversation.lastMessage?.toLowerCase().includes(query)) return true
+      
+      return false
+    })
+    .sort((a, b) => {
+      // Sort by timestamp - most recent first
+      const dateA = new Date(a.timestamp || 0)
+      const dateB = new Date(b.timestamp || 0)
+      return dateB - dateA
+    })
 
   // Reset meta when conversation changes
   useEffect(() => {
