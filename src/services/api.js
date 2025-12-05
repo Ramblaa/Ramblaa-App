@@ -1,14 +1,21 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Debug: Log the API URL being used
+console.log('[API] Base URL:', API_BASE_URL);
+console.log('[API] VITE_API_URL env:', import.meta.env.VITE_API_URL);
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
     this.token = localStorage.getItem('accessToken');
     this.refreshToken = localStorage.getItem('refreshToken');
+    console.log('[API] Initialized with baseURL:', this.baseURL);
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('[API] Request:', options.method || 'GET', url);
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +49,8 @@ class ApiService {
 
       return this.handleResponse(response);
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('[API] Request failed:', url, error.message);
+      console.error('[API] Full error:', error);
       throw error;
     }
   }

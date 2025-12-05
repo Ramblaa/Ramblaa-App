@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "nodemailer": "^7.0.5",
+    "openai": "^4.104.0",
     "pg": "^8.11.3"
   },
   "devDependencies": {

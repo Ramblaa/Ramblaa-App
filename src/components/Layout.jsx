@@ -5,7 +5,7 @@ import {
   MessageSquare, 
   CheckSquare2, 
   AlertTriangle, 
-  HelpCircle, 
+  Layers, 
   Building2, 
   Users, 
   Bot, 
@@ -14,7 +14,9 @@ import {
   Menu,
   X,
   PlayCircle,
-  User
+  User,
+  Calendar,
+  UserCog
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { useAuth } from '../contexts/AuthContext'
@@ -24,9 +26,10 @@ const navigation = [
   { name: 'Tasks', href: '/tasks', icon: CheckSquare2 },
   { name: 'Sandbox', href: '/sandbox', icon: PlayCircle },
   { name: 'Escalations', href: '/escalations', icon: AlertTriangle },
-  { name: 'FAQs', href: '/faqs', icon: HelpCircle },
+  { name: 'Resources', href: '/resources', icon: Layers },
   { name: 'Properties', href: '/properties', icon: Building2 },
-  { name: 'Contacts', href: '/contacts', icon: Users },
+  { name: 'Bookings', href: '/bookings', icon: Calendar },
+  { name: 'Staff', href: '/staff', icon: UserCog },
   { name: 'AI Prompt', href: '/prompt', icon: Bot },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
