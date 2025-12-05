@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cron from 'node-cron';
 import { config } from './config/env.js';
 import { initDatabase } from './db/index.js';
 
@@ -12,6 +13,11 @@ import webhookRoutes from './routes/webhook.js';
 import messagesRoutes from './routes/messages.js';
 import tasksRoutes from './routes/tasks.js';
 import propertiesRoutes from './routes/properties.js';
+import scheduledRoutes from './routes/scheduled.js';
+
+// Import scheduled message services
+import { processPendingScheduledMessages } from './services/scheduledMessageProcessor.js';
+import { evaluateDateBasedRules } from './services/scheduleService.js';
 
 const app = express();
 
@@ -98,6 +104,7 @@ app.use('/api/webhook', webhookLimiter, webhookRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/properties', propertiesRoutes);
+app.use('/api/scheduled', scheduledRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -111,7 +118,7 @@ app.use('*', (req, res) => {
 });
 
 // Build version for deployment verification
-const BUILD_VERSION = '2024-12-04-v4';
+const BUILD_VERSION = '2024-12-05-v1-scheduled-messages';
 const BUILD_TIMESTAMP = new Date().toISOString();
 
 // Version endpoint for deployment verification
@@ -130,6 +137,36 @@ async function start() {
     await initDatabase();
     console.log('[DB] Database initialized');
 
+    // ============================================================
+    // SCHEDULED MESSAGES CRON JOBS
+    // ============================================================
+    
+    // Process pending scheduled messages every 5 minutes
+    cron.schedule('*/5 * * * *', async () => {
+      console.log('[Cron] Processing pending scheduled messages...');
+      try {
+        const result = await processPendingScheduledMessages();
+        if (result.processed > 0) {
+          console.log(`[Cron] Processed ${result.sent} sent, ${result.failed} failed`);
+        }
+      } catch (error) {
+        console.error('[Cron] Error processing scheduled messages:', error.message);
+      }
+    });
+    console.log('[Cron] Scheduled message processor registered (every 5 minutes)');
+
+    // Daily evaluation of date-based rules at midnight
+    cron.schedule('0 0 * * *', async () => {
+      console.log('[Cron] Running daily date-based rules evaluation...');
+      try {
+        const result = await evaluateDateBasedRules();
+        console.log(`[Cron] Evaluated ${result.bookingsChecked} bookings, queued ${result.messagesQueued} messages`);
+      } catch (error) {
+        console.error('[Cron] Error in daily evaluation:', error.message);
+      }
+    });
+    console.log('[Cron] Daily rules evaluator registered (midnight)');
+
     // Railway provides PORT env var - use it directly
     const port = process.env.PORT || 3001;
     const host = '0.0.0.0';
@@ -143,6 +180,7 @@ async function start() {
       console.log(`[Server] Running on ${host}:${port}`);
       console.log(`[Server] Environment: ${config.server.nodeEnv}`);
       console.log(`[Server] CORS origin: ${config.server.corsOrigin}`);
+      console.log(`[Server] Scheduled message cron jobs: ACTIVE`);
     });
   } catch (error) {
     console.error('[Server] Failed to start:', error);
