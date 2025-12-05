@@ -252,6 +252,9 @@ export default function TasksPage() {
                         </div>
                         <div className="flex-1">
                           <h3 className="font-semibold text-brand-dark">{task.title}</h3>
+                          {task.subtitle && (
+                            <p className="text-xs text-brand-mid-gray">{task.subtitle}</p>
+                          )}
                           <p className="text-sm text-brand-mid-gray mt-1">{task.description}</p>
                         </div>
                       </div>

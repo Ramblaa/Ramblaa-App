@@ -67,7 +67,8 @@ router.get('/', async (req, res) => {
       const createdAt = task.created_at ? new Date(task.created_at).toISOString() : null;
       return {
         id: task.id,
-        title: task.task_bucket || task.task_request_title,  // Show category name (e.g., "Fresh Towels")
+        title: task.task_request_title || task.task_bucket || 'Task',  // Main title: "Check-in inquiry"
+        subtitle: task.task_bucket || '',  // Subtitle: "Other"
         type: getTaskType(task.task_bucket),
         property: task.property_name || 'Unknown',
         propertyId: task.property_id,
