@@ -116,19 +116,26 @@ export default function MessagesPage() {
     }
   }
 
-  // Filter conversations based on search query
-  const filteredConversations = conversations.filter(conversation => {
-    if (!searchQuery.trim()) return true
-    
-    const query = searchQuery.toLowerCase()
-    
-    if (conversation.guestName?.toLowerCase().includes(query)) return true
-    if (conversation.phone?.replace(/\D/g, '').includes(query.replace(/\D/g, ''))) return true
-    if (conversation.property?.toLowerCase().includes(query)) return true
-    if (conversation.lastMessage?.toLowerCase().includes(query)) return true
-    
-    return false
-  })
+  // Filter and sort conversations - most recent first
+  const filteredConversations = conversations
+    .filter(conversation => {
+      if (!searchQuery.trim()) return true
+      
+      const query = searchQuery.toLowerCase()
+      
+      if (conversation.guestName?.toLowerCase().includes(query)) return true
+      if (conversation.phone?.replace(/\D/g, '').includes(query.replace(/\D/g, ''))) return true
+      if (conversation.property?.toLowerCase().includes(query)) return true
+      if (conversation.lastMessage?.toLowerCase().includes(query)) return true
+      
+      return false
+    })
+    .sort((a, b) => {
+      // Sort by timestamp - most recent first
+      const dateA = new Date(a.timestamp || 0)
+      const dateB = new Date(b.timestamp || 0)
+      return dateB - dateA
+    })
 
   // Reset meta when conversation changes
   useEffect(() => {
@@ -324,13 +331,13 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex overflow-hidden">
       {/* Conversations List */}
       <div className={cn(
-        "w-full lg:w-96 border-r bg-background",
-        selectedConversation ? "hidden lg:block" : "block"
+        "w-full lg:w-96 border-r bg-background flex flex-col h-full",
+        selectedConversation ? "hidden lg:flex" : "flex"
       )}>
-        <div className="p-6 border-b">
+        <div className="p-6 border-b flex-shrink-0">
           <h1 className="text-2xl font-bold text-brand-dark">Messages</h1>
           <p className="text-brand-mid-gray">Guest conversations</p>
           
@@ -346,7 +353,7 @@ export default function MessagesPage() {
           </div>
         </div>
         
-        <div className="overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {error && (
             <div className="p-4 text-center text-red-500 text-sm">{error}</div>
           )}
@@ -401,13 +408,13 @@ export default function MessagesPage() {
 
       {/* Chat View */}
       <div className={cn(
-        "flex-1 flex flex-col",
+        "flex-1 flex flex-col h-full overflow-hidden",
         !selectedConversation ? "hidden lg:flex" : "flex"
       )}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b bg-background flex items-center justify-between">
+            <div className="p-4 border-b bg-background flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
@@ -530,7 +537,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t bg-background">
+            <div className="p-4 border-t bg-background flex-shrink-0">
               {!isAutoResponseEnabled && (
                 <div className="mb-3 p-2 bg-brand-vanilla/50 rounded-lg border border-brand-vanilla">
                   <div className="flex items-center gap-2 text-sm text-brand-dark">

@@ -30,9 +30,13 @@ export async function createTasksFromAiLogs() {
   const created = [];
 
   // Get AI logs that need task creation (INTEGER columns: 1=true, 0=false)
+  // Only process logs from the last 24 hours to avoid old/stale data
   const logs = await db.prepare(`
     SELECT * FROM ai_logs 
-    WHERE task_required = 1 AND task_created = 0 AND recipient_type = 'Guest'
+    WHERE task_required = 1 
+    AND task_created = 0 
+    AND recipient_type = 'Guest'
+    AND created_at > NOW() - INTERVAL '24 hours'
     ORDER BY created_at ASC
   `).all();
 
@@ -52,17 +56,17 @@ export async function createTasksFromAiLogs() {
     console.log(`[TaskManager]   to_number: ${log.to_number}`);
     console.log(`[TaskManager] ========================================`);
     
-    if (!log.task_bucket) {
-      console.log(`[TaskManager] ✗ Skipping - no task bucket`);
-      continue;
-    }
-    
-    // Skip if bucket is "Other" or empty (no matching task definition found by AI)
-    if (log.task_bucket === 'Other' || !log.task_bucket || log.task_bucket.trim() === '') {
-      console.log(`[TaskManager] ✗ Skipping unmatched bucket: "${log.task_bucket}"`);
-      await db.prepare(`UPDATE ai_logs SET task_created = 1 WHERE id = ?`).run(log.id);
-      continue;
-    }
+    // Wrap in try-catch to ALWAYS mark log as processed, even on error
+    try {
+      // Skip only if bucket is empty (AI didn't identify any task)
+      // "Other" bucket is VALID - these are requests that don't match predefined categories
+      if (!log.task_bucket || log.task_bucket.trim() === '') {
+        console.log(`[TaskManager] ✗ Skipping - no task bucket identified`);
+        await db.prepare(`UPDATE ai_logs SET task_created = 1 WHERE id = ?`).run(log.id);
+        continue;
+      }
+      
+      console.log(`[TaskManager] Creating task for bucket: "${log.task_bucket}" (Other buckets are valid!)`)
     
     // Try to find property_id if missing
     let propertyId = log.property_id;
@@ -214,6 +218,18 @@ export async function createTasksFromAiLogs() {
 
     console.log(`[TaskManager] Task ${taskId} created, assigned to: ${task.staff_name || 'unassigned'}`);
     created.push(task);
+    
+    } catch (taskError) {
+      // CRITICAL: Always mark the log as processed, even on error
+      // This prevents the same log from being reprocessed and causing duplicate/wrong tasks
+      console.error(`[TaskManager] ✗ Error creating task for log ${log.id}:`, taskError.message);
+      try {
+        await db.prepare(`UPDATE ai_logs SET task_created = 1 WHERE id = ?`).run(log.id);
+        console.log(`[TaskManager] Marked failed log ${log.id} as processed to prevent reprocessing`);
+      } catch (markError) {
+        console.error(`[TaskManager] ✗ Failed to mark log as processed:`, markError.message);
+      }
+    }
   }
 
   return created;
@@ -229,7 +245,7 @@ export async function processTaskWorkflow() {
 
   // Get active tasks that need processing (INTEGER: 0=false, 1=true)
   // IMPORTANT: Skip tasks that have already notified their action holder
-  // ALSO: Skip broken/hallucinated tasks (wifi, directions, taxi, Other bucket)
+  // NOTE: "Other" bucket is now VALID - these are requests without a predefined category
   const tasks = await db.prepare(`
     SELECT * FROM tasks 
     WHERE status != 'Completed' 
@@ -238,11 +254,6 @@ export async function processTaskWorkflow() {
     AND (action_holder_notified = 0 OR action_holder_notified IS NULL)
     AND task_bucket IS NOT NULL
     AND task_bucket != ''
-    AND task_bucket != 'Other'
-    AND LOWER(task_bucket) NOT LIKE '%wifi%'
-    AND LOWER(task_bucket) NOT LIKE '%wi-fi%'
-    AND LOWER(task_bucket) NOT LIKE '%direction%'
-    AND LOWER(task_bucket) NOT LIKE '%taxi%'
     ORDER BY created_at ASC
   `).all();
 

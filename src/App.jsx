@@ -10,7 +10,6 @@ import ResourcesPage from './pages/ResourcesPage'
 import PropertiesPage from './pages/PropertiesPage'
 import StaffPage from './pages/StaffPage'
 import BookingsPage from './pages/BookingsPage'
-import PromptPage from './pages/PromptPage'
 import SettingsPage from './pages/SettingsPage'
 import SandboxPage from './pages/SandboxPage'
 import Layout from './components/Layout'
@@ -65,7 +64,6 @@ function AppContent() {
                 <Route path="/bookings" element={<BookingsPage />} />
                 <Route path="/staff" element={<StaffPage />} />
                 <Route path="/contacts" element={<Navigate to="/staff" replace />} />
-                <Route path="/prompt" element={<PromptPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Routes>
             </Layout>

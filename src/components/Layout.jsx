@@ -8,7 +8,6 @@ import {
   Layers, 
   Building2, 
   Users, 
-  Bot, 
   Settings, 
   LogOut,
   Menu,
@@ -30,7 +29,6 @@ const navigation = [
   { name: 'Properties', href: '/properties', icon: Building2 },
   { name: 'Bookings', href: '/bookings', icon: Calendar },
   { name: 'Staff', href: '/staff', icon: UserCog },
-  { name: 'AI Prompt', href: '/prompt', icon: Bot },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

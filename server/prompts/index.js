@@ -145,30 +145,39 @@ Rules:
    - The Action Title represents what the guest JUST requested
    - Verify the Action Title matches content in the CURRENT MESSAGE
    - Do not use historical messages to change or reinterpret the Action Title
-2) AvailablePropertyKnowledge = "Yes" ONLY if the action can be fully answered from Booking/Property/FAQs JSON. If staff action or missing info is needed → "No".
-3) PropertyKnowledgeCategory ∈ {"Booking Details","Property Details","Property FAQs","None"}. Use "None" if no source suffices.
-4) FAQCategory: set only when PropertyKnowledgeCategory == "Property FAQs". Pick the single best item from FAQs Available (exact text) or "".
-5) TaskRequired = true ONLY if the action needs operational work or coordination beyond knowledge.
-6) If TaskRequired == false → TaskBucket = "" and TaskRequestTitle = "".
-7) If TaskRequired == true:
+
+2) Determine if this is a REQUEST vs an INFO QUESTION:
+   - REQUEST: Guest wants something done (early check-in, towels, cleaning, etc.) → TaskRequired = true
+   - INFO QUESTION: Guest just wants information (what time is check-in?, wifi password?) → TaskRequired = false
+   - HYBRID: Guest asks about something where FAQ says "upon request" or "subject to availability" 
+     → This IS a request, so TaskRequired = true
+
+3) AvailablePropertyKnowledge = "Yes" if relevant info exists in Booking/Property/FAQs JSON (even if task is also needed).
+4) PropertyKnowledgeCategory ∈ {"Booking Details","Property Details","Property FAQs","None"}. Use "None" if no source suffices.
+5) FAQCategory: set only when PropertyKnowledgeCategory == "Property FAQs". Pick the single best item from FAQs Available (exact text) or "".
+6) TaskRequired = true if the guest is REQUESTING something that requires coordination, even if FAQ info exists.
+   - "Can I check-in early?" → YES, this is a REQUEST for early check-in
+   - "What time is check-in?" → NO, this is just asking for info
+   - "Can I get towels?" → YES, this is a REQUEST
+7) If TaskRequired == false → TaskBucket = "" and TaskRequestTitle = "".
+8) If TaskRequired == true:
    - TaskBucket: Select the task from "Tasks Available" that BEST MATCHES the Action Title's subject
-   - The Action Title contains the guest's actual request - match it semantically
-   - If no task matches the Action Title's subject, use "Other"
+   - If no task matches, use "Other"
    - TaskRequestTitle: short, specific, staff-facing (≤ 12 words), describing only THIS action.
-8) AiResponse style:
+9) AiResponse style:
    - Clear, objective, informative. No greeting, sign-off, emojis, exclamations, or names.
    - 1–2 sentences. Do NOT ask the guest any questions.
-   - Do not invent values not present in JSON. Repeat codes/times exactly as written when applicable.
-9) AiResponse generation logic:
-   - If TaskRequired == true:
-     • If TaskBucket == "Other" (or not in Tasks Available) → 
-       AiResponse = "I understood your task request, let me check with the staff and host on the details of this for you".
-     • Else → 
-       AiResponse = "We'll reach out to our staff to organise the {{TaskBucket}} task for you."
-   - Else if TaskRequired == false:
-     • If AvailablePropertyKnowledge == "Yes" → provide the direct answer succinctly using the JSON sources.
-     • If AvailablePropertyKnowledge == "No" → 
-       AiResponse = "I understood your request, let me check with the staff and host on the details of this for you".
+   - Do not invent values not present in JSON.
+10) AiResponse generation logic:
+   - If TaskRequired == true AND AvailablePropertyKnowledge == "Yes":
+     • Include the FAQ info AND indicate you'll coordinate the request
+     • Example: "Standard check-in is from 2:00 PM. I'll check with the host about early check-in availability for you."
+   - If TaskRequired == true AND AvailablePropertyKnowledge == "No":
+     • "I understood your request, let me check with the staff and host on the details of this for you."
+   - If TaskRequired == false AND AvailablePropertyKnowledge == "Yes":
+     • Provide the direct answer succinctly using the JSON sources.
+   - If TaskRequired == false AND AvailablePropertyKnowledge == "No":
+     • "I understood your request, let me check with the staff and host on the details of this for you."
 10) Keep 'UrgencyIndicators' and 'EscalationRiskIndicators' concise. Use "None" if not applicable.
 11) Output STRICT JSON ONLY with these keys, in this order:
 {
