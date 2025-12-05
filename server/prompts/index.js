@@ -82,37 +82,38 @@ Your output **must be a single, valid JSON object** matching the schema below �
 // MESSAGE SUMMARIZATION
 // ============================================================================
 
-// VERSION: 2024-12-04-v6 - AI self-validation, no hardcoded checks
+// VERSION: 2024-12-04-v7 - Group related sub-questions into single action
 export const PROMPT_SUMMARIZE_MESSAGE_ACTIONS = `
-You must extract action requests from ONLY the current message.
+Extract action requests from the current message.
 
 ===== CURRENT MESSAGE =====
 {{MESSAGE}}
 ===== END CURRENT MESSAGE =====
 
-TASK: Extract 1-2 action titles from the CURRENT MESSAGE above.
+TASK: Extract actions from the CURRENT MESSAGE above.
+
+GROUPING RULE (critical):
+- Multiple questions about the SAME TOPIC = 1 action
+- Example: "What time is check-out? Where do I leave keys?" = 1 action ("Check-out inquiry")
+- Example: "Need towels and also wifi password" = 2 actions (different topics)
+- When in doubt, group into fewer actions
 
 MANDATORY RULES:
-1. ONLY extract requests that appear in the CURRENT MESSAGE section above
-2. The history section below is ONLY for understanding context - NEVER extract actions from it
-3. Each action title MUST contain words/concepts that actually appear in the current message
-4. If the current message is just a greeting, thanks, or acknowledgment → return empty Action Titles array
-5. Use the guest's actual words from their message - do not substitute similar words
+1. Extract ONLY from CURRENT MESSAGE - never from history
+2. Group related sub-questions into ONE action title
+3. Maximum 2 actions - only split if topics are truly unrelated
+4. If just greeting/thanks/acknowledgment → empty Action Titles array
+5. Use guest's actual words - do not substitute
 
-SELF-VALIDATION (check before outputting):
-Before adding any action to your output, verify:
-- Does this action's main subject appear in the CURRENT MESSAGE? If NO → do not include it
-- Am I accidentally pulling this from the history? If YES → do not include it
-
-OUTPUT FORMAT (strict JSON only, no other text):
+OUTPUT FORMAT (strict JSON only):
 {
   "Language": "<2-letter code>",
   "Tone": "Friendly|Neutral|Frustrated|etc",
   "Sentiment": "Positive|Neutral|Negative",
-  "Action Titles": ["<only actions from current message>"]
+  "Action Titles": ["<grouped actions from current message>"]
 }
 
-HISTORY (context only - do NOT extract actions from here):
+HISTORY (context only - do NOT extract from here):
 {{HISTORICAL_MESSAGES}}
 `;
 
