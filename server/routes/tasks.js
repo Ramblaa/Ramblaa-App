@@ -455,6 +455,68 @@ router.delete('/:id', async (req, res) => {
 });
 
 /**
+ * POST /api/tasks/:id/assign
+ * Assign staff to task and trigger workflow
+ */
+router.post('/:id/assign', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { staffId, staffName, staffPhone } = req.body;
+    const db = getDb();
+
+    // Validate task exists
+    const task = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Update task with staff assignment
+    await db.prepare(`
+      UPDATE tasks SET 
+        staff_id = ?,
+        staff_name = ?,
+        staff_phone = ?,
+        action_holder = 'Staff',
+        action_holder_phone = ?,
+        action_holder_notified = 0,
+        status = 'Waiting on Staff',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(staffId, staffName, staffPhone, staffPhone, id);
+
+    console.log(`[Tasks] Assigned staff ${staffName} to task ${id}, triggering workflow...`);
+
+    // Trigger the task workflow to send notification to staff
+    const results = await processTaskWorkflow();
+    
+    // Get updated task
+    const updated = await db.prepare(`
+      SELECT t.*, p.name as property_name, b.guest_name
+      FROM tasks t
+      LEFT JOIN properties p ON t.property_id = p.id
+      LEFT JOIN bookings b ON t.booking_id = b.id
+      WHERE t.id = ?
+    `).get(id);
+
+    res.json({
+      success: true,
+      task: {
+        id: updated.id,
+        title: updated.task_bucket || updated.task_request_title,
+        assignee: updated.staff_name,
+        assigneePhone: updated.staff_phone,
+        status: formatStatus(updated.status),
+        actionHolder: updated.action_holder,
+      },
+      workflowResults: results,
+    });
+  } catch (error) {
+    console.error('[Tasks] Assign error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/tasks/:id/complete
  * Mark task as completed
  */
