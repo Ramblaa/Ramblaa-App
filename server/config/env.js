@@ -47,6 +47,12 @@ export const config = {
     apiKey: process.env.WEBHOOK_API_KEY,
     accountId: parseInt(process.env.ACCOUNT_ID || '1', 10),
   },
+
+  // Webhook Mirror URLs for multi-environment testing
+  // Primary webhook forwards to these URLs (comma-separated)
+  webhookMirrorUrls: process.env.WEBHOOK_MIRROR_URLS 
+    ? process.env.WEBHOOK_MIRROR_URLS.split(',').map(u => u.trim()).filter(Boolean)
+    : [],
 };
 
 export default config;
