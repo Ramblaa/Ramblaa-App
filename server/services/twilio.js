@@ -39,13 +39,6 @@ export async function sendWhatsAppMessage({
   recipientType = 'Guest',
   metadata = {},
 }) {
-  const client = getClient();
-  
-  if (!client) {
-    console.error('[Twilio] Client not configured');
-    return { success: false, messageSid: null, error: 'Twilio not configured' };
-  }
-
   const fromNumber = from || config.twilio.whatsappNumber;
   const toFormatted = formatForWhatsApp(fromNumber, to);
 
@@ -55,6 +48,33 @@ export async function sendWhatsAppMessage({
     messageBody = `[STAFF] ${body}`;
   } else if (recipientType === 'Host') {
     messageBody = `[HOST] ${body}`;
+  }
+
+  // DRY RUN MODE: Log but don't actually send
+  if (config.server.dryRunMode) {
+    const dryRunSid = `dry-run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    console.log(`[DRY RUN] Would send to ${toFormatted}:`);
+    console.log(`[DRY RUN] Body: ${messageBody}`);
+    console.log(`[DRY RUN] Recipient: ${recipientType}`);
+    
+    // Still log to database for visibility
+    await logOutboundMessage({
+      messageSid: dryRunSid,
+      from: fromNumber,
+      to: toFormatted,
+      body: `[DRY RUN] ${body}`,
+      recipientType,
+      ...metadata,
+    });
+
+    return { success: true, messageSid: dryRunSid, error: null, dryRun: true };
+  }
+
+  const client = getClient();
+  
+  if (!client) {
+    console.error('[Twilio] Client not configured');
+    return { success: false, messageSid: null, error: 'Twilio not configured' };
   }
 
   try {
@@ -102,13 +122,6 @@ export async function sendTemplateMessage({
   contentVariables = {},
   metadata = {},
 }) {
-  const client = getClient();
-  
-  if (!client) {
-    console.error('[Twilio] Client not configured');
-    return { success: false, messageSid: null, error: 'Twilio not configured' };
-  }
-
   if (!contentSid) {
     console.error('[Twilio] No ContentSid provided');
     return { success: false, messageSid: null, error: 'No ContentSid provided' };
@@ -116,6 +129,33 @@ export async function sendTemplateMessage({
 
   const fromNumber = from || config.twilio.whatsappNumber;
   const toFormatted = formatForWhatsApp(fromNumber, to);
+
+  // DRY RUN MODE: Log but don't actually send
+  if (config.server.dryRunMode) {
+    const dryRunSid = `dry-run-template-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    console.log(`[DRY RUN] Would send template to ${toFormatted}:`);
+    console.log(`[DRY RUN] ContentSid: ${contentSid}`);
+    console.log(`[DRY RUN] Variables: ${JSON.stringify(contentVariables)}`);
+    
+    // Still log to database for visibility
+    await logScheduledMessage({
+      messageSid: dryRunSid,
+      from: fromNumber,
+      to: toFormatted,
+      contentSid,
+      contentVariables,
+      ...metadata,
+    });
+
+    return { success: true, messageSid: dryRunSid, error: null, dryRun: true };
+  }
+
+  const client = getClient();
+  
+  if (!client) {
+    console.error('[Twilio] Client not configured');
+    return { success: false, messageSid: null, error: 'Twilio not configured' };
+  }
 
   try {
     const message = await client.messages.create({

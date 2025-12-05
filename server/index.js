@@ -181,6 +181,12 @@ async function start() {
       console.log(`[Server] Environment: ${config.server.nodeEnv}`);
       console.log(`[Server] CORS origin: ${config.server.corsOrigin}`);
       console.log(`[Server] Scheduled message cron jobs: ACTIVE`);
+      if (config.server.dryRunMode) {
+        console.log('========================================');
+        console.log('[Server] ⚠️  DRY RUN MODE ENABLED');
+        console.log('[Server] Outbound messages will be LOGGED but NOT SENT');
+        console.log('========================================');
+      }
     });
   } catch (error) {
     console.error('[Server] Failed to start:', error);
