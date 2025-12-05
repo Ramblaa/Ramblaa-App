@@ -30,14 +30,21 @@ export default function MessagesPage() {
   // Ref for scrolling to latest message
   const messagesEndRef = useRef(null)
 
+  // Track if this is the initial load for the conversation
+  const isInitialLoad = useRef(true)
+
   // Scroll to bottom of messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = (instant = false) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'auto' : 'smooth' })
   }
 
   // Auto-scroll when messages change or conversation switches
   useEffect(() => {
-    scrollToBottom()
+    if (conversationMessages.length > 0) {
+      // Use instant scroll on initial load, smooth scroll for new messages
+      scrollToBottom(isInitialLoad.current)
+      isInitialLoad.current = false
+    }
   }, [conversationMessages])
 
   // Get display data - prefer loaded meta, fall back to selected conversation
@@ -127,6 +134,7 @@ export default function MessagesPage() {
   useEffect(() => {
     setConversationMeta({})
     setConversationMessages([])
+    isInitialLoad.current = true // Reset initial load flag for new conversation
   }, [selectedConversation?.id])
 
   const handleSendMessage = async (e) => {
