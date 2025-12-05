@@ -80,17 +80,18 @@ export default function ScheduledMessagesPage() {
     setLoading(true)
     try {
       // Fetch properties first - this is critical for the dropdowns
-      const propsRes = await apiService.request('/api/properties')
+      // Note: Don't include /api prefix - apiService already has it as baseURL
+      const propsRes = await apiService.request('/properties')
       setProperties(propsRes || [])
       console.log('[ScheduledMessages] Properties loaded:', propsRes?.length || 0)
       
       // Fetch other data in parallel, with individual error handling
       const results = await Promise.allSettled([
-        apiService.request('/api/scheduled/templates'),
-        apiService.request('/api/scheduled/rules'),
-        apiService.request('/api/scheduled/messages?limit=50'),
-        apiService.request('/api/scheduled/stats'),
-        apiService.request('/api/scheduled/trigger-types'),
+        apiService.request('/scheduled/templates'),
+        apiService.request('/scheduled/rules'),
+        apiService.request('/scheduled/messages?limit=50'),
+        apiService.request('/scheduled/stats'),
+        apiService.request('/scheduled/trigger-types'),
       ])
       
       if (results[0].status === 'fulfilled') setTemplates(results[0].value || [])
@@ -111,7 +112,7 @@ export default function ScheduledMessagesPage() {
   // Template CRUD
   const handleCreateTemplate = async () => {
     try {
-      await apiService.request('/api/scheduled/templates', {
+      await apiService.request('/scheduled/templates', {
         method: 'POST',
         body: JSON.stringify({
           ...templateForm,
@@ -130,7 +131,7 @@ export default function ScheduledMessagesPage() {
 
   const handleUpdateTemplate = async () => {
     try {
-      await apiService.request(`/api/scheduled/templates/${editingTemplate.id}`, {
+      await apiService.request(`/scheduled/templates/${editingTemplate.id}`, {
         method: 'PUT',
         body: JSON.stringify(templateForm),
       })
@@ -146,7 +147,7 @@ export default function ScheduledMessagesPage() {
   const handleDeleteTemplate = async (id) => {
     if (!confirm('Are you sure you want to delete this template?')) return
     try {
-      await apiService.request(`/api/scheduled/templates/${id}`, { method: 'DELETE' })
+      await apiService.request(`/scheduled/templates/${id}`, { method: 'DELETE' })
       fetchData()
     } catch (err) {
       setError(err.message)
@@ -156,7 +157,7 @@ export default function ScheduledMessagesPage() {
   // Rule CRUD
   const handleCreateRule = async () => {
     try {
-      await apiService.request('/api/scheduled/rules', {
+      await apiService.request('/scheduled/rules', {
         method: 'POST',
         body: JSON.stringify(ruleForm),
       })
@@ -170,7 +171,7 @@ export default function ScheduledMessagesPage() {
 
   const handleUpdateRule = async () => {
     try {
-      await apiService.request(`/api/scheduled/rules/${editingRule.id}`, {
+      await apiService.request(`/scheduled/rules/${editingRule.id}`, {
         method: 'PUT',
         body: JSON.stringify(ruleForm),
       })
@@ -186,7 +187,7 @@ export default function ScheduledMessagesPage() {
   const handleDeleteRule = async (id) => {
     if (!confirm('Are you sure you want to delete this rule?')) return
     try {
-      await apiService.request(`/api/scheduled/rules/${id}`, { method: 'DELETE' })
+      await apiService.request(`/scheduled/rules/${id}`, { method: 'DELETE' })
       fetchData()
     } catch (err) {
       setError(err.message)
@@ -195,7 +196,7 @@ export default function ScheduledMessagesPage() {
 
   const handleToggleRule = async (rule) => {
     try {
-      await apiService.request(`/api/scheduled/rules/${rule.id}`, {
+      await apiService.request(`/scheduled/rules/${rule.id}`, {
         method: 'PUT',
         body: JSON.stringify({ isActive: !rule.isActive }),
       })
@@ -208,7 +209,7 @@ export default function ScheduledMessagesPage() {
   // Scheduled message actions
   const handleCancelMessage = async (id) => {
     try {
-      await apiService.request(`/api/scheduled/messages/${id}/cancel`, { method: 'POST' })
+      await apiService.request(`/scheduled/messages/${id}/cancel`, { method: 'POST' })
       fetchData()
     } catch (err) {
       setError(err.message)
@@ -217,7 +218,7 @@ export default function ScheduledMessagesPage() {
 
   const handleProcessNow = async () => {
     try {
-      const result = await apiService.request('/api/scheduled/process', { method: 'POST' })
+      const result = await apiService.request('/scheduled/process', { method: 'POST' })
       alert(`Processed: ${result.sent} sent, ${result.failed} failed`)
       fetchData()
     } catch (err) {
@@ -227,7 +228,7 @@ export default function ScheduledMessagesPage() {
 
   const handleRetryFailed = async () => {
     try {
-      const result = await apiService.request('/api/scheduled/retry-failed', { method: 'POST' })
+      const result = await apiService.request('/scheduled/retry-failed', { method: 'POST' })
       alert(`Reset ${result.reset} failed messages for retry`)
       fetchData()
     } catch (err) {
