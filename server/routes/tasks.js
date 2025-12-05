@@ -77,7 +77,7 @@ router.get('/', async (req, res) => {
         dueDate: createdAt?.split('T')[0],
         dueTime: createdAt?.split('T')[1]?.slice(0, 5),
         status: formatStatus(task.status),
-        priority: getPriority(task.urgency_indicators),
+        priority: getPriority(task),
         description: task.guest_message || '',
         threadCount: 1, // Would need to count from messages
         actionHolder: task.action_holder,
@@ -356,7 +356,7 @@ router.get('/:id', async (req, res) => {
       assignee: task.staff_name || 'Unassigned',
       assigneePhone: task.staff_phone,
       status: formatStatus(task.status),
-      priority: getPriority(task.urgency_indicators),
+      priority: getPriority(task),
       description: task.guest_message,
       guestMessage: task.guest_message,
       guestPhone: task.phone,
@@ -642,10 +642,19 @@ function mapStatus(status) {
   }
 }
 
-function getPriority(urgency) {
-  if (!urgency) return 'low';
+function getPriority(task) {
+  // First check if task has explicit priority set
+  if (task?.priority && ['low', 'medium', 'high', 'urgent'].includes(task.priority)) {
+    return task.priority;
+  }
+  
+  // Fall back to deriving from urgency_indicators
+  const urgency = task?.urgency_indicators || task;
+  if (!urgency || typeof urgency !== 'string') return 'medium';
+  
   const lower = urgency.toLowerCase();
-  if (lower.includes('critical') || lower.includes('high')) return 'high';
+  if (lower.includes('critical') || lower.includes('urgent')) return 'urgent';
+  if (lower.includes('high')) return 'high';
   if (lower.includes('medium')) return 'medium';
   return 'low';
 }

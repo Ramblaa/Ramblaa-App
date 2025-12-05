@@ -509,7 +509,7 @@ async function handleGuestPath(task, missingItems, lang) {
 /**
  * Handle Staff info request path
  */
-async function handleStaffPath(task, triageResult, lang) {
+async function handleStaffPath(task, triageResult, guestLang) {
   const db = getDb();
 
   if (!task.staff_phone) {
@@ -517,10 +517,21 @@ async function handleStaffPath(task, triageResult, lang) {
     return;
   }
 
+  // Get staff's preferred language from staff table
+  let staffLang = 'en'; // Default to English
+  if (task.staff_id) {
+    const staffRecord = await db.prepare('SELECT preferred_language FROM staff WHERE id = ?').get(task.staff_id);
+    if (staffRecord?.preferred_language) {
+      staffLang = staffRecord.preferred_language;
+    }
+  }
+  
+  console.log(`[TaskManager] Staff language: ${staffLang} (guest language: ${guestLang})`);
+
   const staffName = task.staff_name?.split(' ')[0] || 'there';
 
   const prompt = fillTemplate(PROMPT_STAFF_INFO_REQUEST, {
-    STAFF_LANG: lang,
+    STAFF_LANG: staffLang,
     STAFF_NAME: staffName,
     TASK_SCOPE: task.task_bucket || 'Task',
     STAFF_REQUIREMENTS: task.staff_requirements || '(none)',
