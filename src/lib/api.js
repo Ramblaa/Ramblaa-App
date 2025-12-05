@@ -124,6 +124,16 @@ export const tasksApi = {
       method: 'POST',
     });
   },
+
+  /**
+   * Assign staff to task and trigger workflow
+   */
+  async assignTask(taskId, staffData) {
+    return apiFetch(`/tasks/${taskId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(staffData),
+    });
+  },
 };
 
 // ============================================================================
@@ -176,6 +186,19 @@ export const propertiesApi = {
 };
 
 // ============================================================================
+// STAFF API
+// ============================================================================
+
+export const staffApi = {
+  /**
+   * Get staff for a property
+   */
+  async getStaff(propertyId) {
+    return apiFetch(`/properties/${propertyId}/staff`);
+  },
+};
+
+// ============================================================================
 // HEALTH CHECK
 // ============================================================================
 
@@ -192,5 +215,6 @@ export default {
   messages: messagesApi,
   tasks: tasksApi,
   properties: propertiesApi,
+  staff: staffApi,
   checkHealth,
 };

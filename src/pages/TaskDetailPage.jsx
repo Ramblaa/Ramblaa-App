@@ -7,7 +7,7 @@ import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { cn } from '../lib/utils'
 import { useParams, useNavigate } from 'react-router-dom'
-import { tasksApi, messagesApi } from '../lib/api'
+import { tasksApi, messagesApi, staffApi } from '../lib/api'
 
 const typeIcons = {
   cleaning: 'bg-blue-100 text-blue-600',
@@ -40,6 +40,9 @@ export default function TaskDetailPage() {
   const [newMessage, setNewMessage] = useState('')
   const [conversationStates, setConversationStates] = useState({})
   const [sending, setSending] = useState(false)
+  const [staffList, setStaffList] = useState([])
+  const [showStaffSelector, setShowStaffSelector] = useState(false)
+  const [assigning, setAssigning] = useState(false)
 
   // Ref for scrolling to latest message
   const messagesEndRef = useRef(null)
@@ -70,6 +73,37 @@ export default function TaskDetailPage() {
     loadTask()
   }, [taskId])
 
+  // Load staff when property is available
+  async function loadStaff(propertyId) {
+    if (!propertyId) return
+    try {
+      const staff = await staffApi.getStaff(propertyId)
+      setStaffList(staff)
+    } catch (err) {
+      console.error('Failed to load staff:', err)
+    }
+  }
+
+  // Assign staff to task
+  async function handleAssignStaff(staff) {
+    try {
+      setAssigning(true)
+      await tasksApi.assignTask(taskId, {
+        staffId: staff.id,
+        staffName: staff.name,
+        staffPhone: staff.phone,
+      })
+      setShowStaffSelector(false)
+      // Reload task to get updated data
+      await loadTask()
+    } catch (err) {
+      console.error('Failed to assign staff:', err)
+      alert('Failed to assign staff: ' + err.message)
+    } finally {
+      setAssigning(false)
+    }
+  }
+
   async function loadTask() {
     try {
       setLoading(true)
@@ -93,54 +127,89 @@ export default function TaskDetailPage() {
     }
   }
 
-  // Build conversation threads from messages and task data
+  // Build a UNIFIED conversation thread with all messages (guest + staff)
   function buildConversations(taskData) {
-    const conversations = []
+    const allMessages = []
     
-    // Guest conversation (if there's a guest phone)
-    if (taskData.guestPhone) {
-      conversations.push({
-        id: `guest-${taskData.guestPhone}`,
-        personName: taskData.guestName || 'Guest',
-        personRole: 'Guest',
-        personType: 'guest',
-        phone: taskData.guestPhone,
-        lastActivity: formatLastActivity(taskData.updatedAt),
-        autoResponseEnabled: true,
-        messages: parseConversationThread(taskData.conversation, 'guest'),
-      })
-    }
+    // Parse conversation thread and determine sender from message content
+    const conversationItems = taskData.conversation || []
+    const items = Array.isArray(conversationItems) ? conversationItems : 
+      typeof conversationItems === 'string' ? conversationItems.split('\n').filter(Boolean) : []
     
-    // Staff conversation (if assigned)
-    if (taskData.assigneePhone || taskData.assignee) {
-      conversations.push({
-        id: `staff-${taskData.assigneePhone || taskData.id}`,
-        personName: taskData.assignee || 'Staff',
-        personRole: 'Staff',
-        personType: 'staff',
-        phone: taskData.assigneePhone,
-        lastActivity: formatLastActivity(taskData.updatedAt),
-        autoResponseEnabled: false,
-        messages: parseConversationThread(taskData.conversation, 'staff'),
-      })
-    }
-    
-    // Add any additional messages from the messages array
-    if (taskData.messages?.length) {
-      const guestConv = conversations.find(c => c.personType === 'guest')
-      if (guestConv) {
-        const additionalMsgs = taskData.messages.map(m => ({
-          id: m.id,
-          text: m.text,
-          sender: m.sender,
-          senderName: m.sender === 'guest' ? taskData.guestName : 'Rambley',
-          timestamp: formatTimestamp(m.timestamp),
-        }))
-        guestConv.messages = [...guestConv.messages, ...additionalMsgs]
+    items.forEach((item, idx) => {
+      const parts = typeof item === 'string' ? item.split(' - ') : []
+      if (parts.length >= 4) {
+        const [date, actor, direction, ...messageParts] = parts
+        const message = messageParts.join(' - ')
+        const sender = actor.toLowerCase().includes('guest') ? 'guest' :
+                       actor.toLowerCase().includes('staff') ? 'staff' : 'rambley'
+        
+        allMessages.push({
+          id: `conv-${idx}`,
+          text: message,
+          sender,
+          senderName: actor,
+          timestamp: formatTimestamp(date),
+          rawDate: date,
+        })
       }
+    })
+    
+    // Add messages from the messages array
+    if (taskData.messages?.length) {
+      taskData.messages.forEach(m => {
+        // Determine if this is a staff message based on body content or requestor_role
+        let sender = m.sender
+        let text = m.text
+        
+        // Check if message starts with "Staff:" prefix - this is a staff message
+        if (text && (text.startsWith('Staff:') || text.startsWith('[STAFF]'))) {
+          sender = 'staff'
+          text = text.replace(/^(Staff:|^\[STAFF\])\s*/i, '')
+        }
+        
+        allMessages.push({
+          id: m.id,
+          text: text,
+          sender: sender,
+          senderName: sender === 'guest' ? (taskData.guestName || 'Guest') : 
+                      sender === 'staff' ? (taskData.assignee || 'Staff') : 'Rambley',
+          timestamp: formatTimestamp(m.timestamp),
+          rawDate: m.timestamp,
+        })
+      })
     }
     
-    return conversations.length > 0 ? conversations : getDefaultConversations(taskData)
+    // Sort messages by timestamp
+    allMessages.sort((a, b) => {
+      const dateA = new Date(a.rawDate || 0)
+      const dateB = new Date(b.rawDate || 0)
+      return dateA - dateB
+    })
+    
+    // Return single unified conversation
+    // Only show staffName if there's an actual assignee (not 'Unassigned')
+    const hasStaff = taskData.assignee && taskData.assignee !== 'Unassigned'
+    
+    return [{
+      id: 'unified',
+      personName: 'Task Communications',
+      personRole: 'All',
+      personType: 'unified',
+      phone: taskData.guestPhone,
+      staffPhone: taskData.assigneePhone,
+      guestName: taskData.guestName || 'Guest',
+      staffName: hasStaff ? taskData.assignee : null,
+      lastActivity: formatLastActivity(taskData.updatedAt),
+      autoResponseEnabled: true,
+      messages: allMessages.length > 0 ? allMessages : [{
+        id: 'initial',
+        text: taskData.guestMessage || taskData.description || 'No messages yet',
+        sender: 'guest',
+        senderName: taskData.guestName || 'Guest',
+        timestamp: formatTimestamp(taskData.createdAt),
+      }],
+    }]
   }
 
   function parseConversationThread(conversation, filterType) {
@@ -371,7 +440,19 @@ export default function TaskDetailPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <User className="h-3 w-3" />
-                  <span>{task.assignee || 'Unassigned'}</span>
+                  {task.assignee && task.assignee !== 'Unassigned' ? (
+                    <span>{task.assignee}</span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        loadStaff(task.propertyId)
+                        setShowStaffSelector(true)
+                      }}
+                      className="text-brand-purple hover:underline font-medium"
+                    >
+                      Unassigned - Click to assign
+                    </button>
+                  )}
                 </div>
                 {task.dueDate && (
                   <div className="flex items-center gap-1">
@@ -393,26 +474,10 @@ export default function TaskDetailPage() {
           {sortedConversations.map((conversation) => {
             const lastMessage = conversation.messages[conversation.messages.length - 1]
             
-            // Generate initials from person name
-            const getInitials = (name) => {
-              const names = (name || 'Unknown').split(' ')
-              if (names.length >= 2) {
-                return `${names[0][0]}${names[1][0]}`.toUpperCase()
-              }
-              return (name || 'U').substring(0, 2).toUpperCase()
-            }
-            
-            // Get avatar background color based on person type
-            const getAvatarColor = (personType) => {
-              switch (personType) {
-                case 'guest':
-                  return 'bg-brand-vanilla text-brand-dark'
-                case 'staff':
-                  return 'bg-brand-dark text-brand-vanilla'
-                default:
-                  return 'bg-brand-dark text-brand-vanilla'
-              }
-            }
+            // Count messages by sender type
+            const guestCount = conversation.messages.filter(m => m.sender === 'guest').length
+            const staffCount = conversation.messages.filter(m => m.sender === 'staff').length
+            const hostCount = conversation.messages.filter(m => m.sender === 'rambley' || m.sender === 'host').length
             
             return (
               <motion.div
@@ -425,27 +490,50 @@ export default function TaskDetailPage() {
                 onClick={() => setSelectedConversation(conversation)}
               >
                 <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-medium text-sm",
-                    getAvatarColor(conversation.personType)
-                  )}>
-                    {getInitials(conversation.personName)}
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-brand-purple text-white">
+                    <MessageCircle className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-brand-dark text-sm">{conversation.personName}</h3>
-                      <Badge variant="secondary" className="text-xs">
-                        {conversation.personRole}
-                      </Badge>
+                      <h3 className="font-medium text-brand-dark text-sm">All Communications</h3>
                     </div>
+                    
+                    {/* Participant badges */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                        <UserCircle className="h-3 w-3" />
+                        {conversation.guestName || 'Guest'}
+                      </Badge>
+                      {conversation.staffName && (
+                        <Badge className="text-xs flex items-center gap-1 bg-orange-100 text-orange-700">
+                          <Users className="h-3 w-3" />
+                          {conversation.staffName}
+                        </Badge>
+                      )}
+                    </div>
+                    
                     <p className="text-sm text-brand-mid-gray truncate">
                       {lastMessage?.senderName}: {lastMessage?.text || 'No messages'}
                     </p>
                     <div className="flex items-center justify-between mt-1">
                       <p className="text-xs text-brand-mid-gray">{conversation.lastActivity}</p>
-                      <Badge variant="outline" className="text-xs">
-                        {conversation.messages.length}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        {guestCount > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <UserCircle className="h-3 w-3 mr-1" />{guestCount}
+                          </Badge>
+                        )}
+                        {staffCount > 0 && (
+                          <Badge className="text-xs bg-orange-100 text-orange-700">
+                            <Users className="h-3 w-3 mr-1" />{staffCount}
+                          </Badge>
+                        )}
+                        {hostCount > 0 && (
+                          <Badge className="text-xs bg-brand-purple text-white">
+                            <Bot className="h-3 w-3 mr-1" />{hostCount}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -473,24 +561,27 @@ export default function TaskDetailPage() {
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm",
-                  selectedConversation.personType === 'guest' ? 'bg-brand-vanilla text-brand-dark' :
-                  selectedConversation.personType === 'staff' ? 'bg-brand-dark text-brand-vanilla' :
-                  'bg-brand-dark text-brand-vanilla'
-                )}>
-                  {(() => {
-                    const names = (selectedConversation.personName || 'Unknown').split(' ')
-                    if (names.length >= 2) {
-                      return `${names[0][0]}${names[1][0]}`.toUpperCase()
-                    }
-                    return (selectedConversation.personName || 'U').substring(0, 2).toUpperCase()
-                  })()}
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-brand-purple text-white">
+                  <MessageCircle className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-brand-dark">{selectedConversation.personName}</h2>
-                  <p className="text-xs text-brand-mid-gray">
-                    {selectedConversation.personRole} • {selectedConversation.messages.length} messages
+                  <h2 className="font-semibold text-brand-dark">Task Communications</h2>
+                  <p className="text-xs text-brand-mid-gray flex items-center gap-2">
+                    <span className="flex items-center gap-1">
+                      <UserCircle className="h-3 w-3" />
+                      {selectedConversation.guestName || 'Guest'}
+                    </span>
+                    {selectedConversation.staffName && (
+                      <>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 text-orange-600">
+                          <Users className="h-3 w-3" />
+                          {selectedConversation.staffName}
+                        </span>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span>{selectedConversation.messages.length} messages</span>
                   </p>
                 </div>
               </div>
@@ -524,39 +615,48 @@ export default function TaskDetailPage() {
               </div>
             </div>
 
-            {/* Messages */}
+            {/* Messages - Unified view with color-coded senders */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <AnimatePresence>
-                {selectedConversation.messages.map((message, index) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className={cn(
-                      "flex",
-                      message.sender === 'guest' || message.sender === 'staff'
-                        ? "justify-start" 
-                        : "justify-end",
-                      message.isSystemMessage && "opacity-60 justify-center"
-                    )}
-                  >
-                    {message.isSystemMessage ? (
-                      <div className="bg-gray-100 text-gray-600 italic text-sm px-3 py-2 rounded-lg max-w-md text-center">
-                        {message.text}
-                      </div>
-                    ) : (
-                      <div className={cn(
-                        "max-w-xs lg:max-w-md",
-                        message.sender === 'guest' || message.sender === 'staff'
-                          ? "mr-12" 
-                          : "ml-12"
-                      )}>
-                        {/* Sender badge for non-guest messages */}
-                        {message.sender !== 'guest' && message.sender !== 'staff' && (
-                          <div className="flex mb-1 justify-end">
+                {selectedConversation.messages.map((message, index) => {
+                  // Determine alignment: guest on left, staff on left (different color), host/rambley on right
+                  const isInbound = message.sender === 'guest' || message.sender === 'staff'
+                  
+                  return (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={cn(
+                        "flex",
+                        isInbound ? "justify-start" : "justify-end",
+                        message.isSystemMessage && "opacity-60 justify-center"
+                      )}
+                    >
+                      {message.isSystemMessage ? (
+                        <div className="bg-gray-100 text-gray-600 italic text-sm px-3 py-2 rounded-lg max-w-md text-center">
+                          {message.text}
+                        </div>
+                      ) : (
+                        <div className={cn(
+                          "max-w-xs lg:max-w-md",
+                          isInbound ? "mr-12" : "ml-12"
+                        )}>
+                          {/* Sender badge - show for all messages */}
+                          <div className={cn("flex mb-1", isInbound ? "justify-start" : "justify-end")}>
                             <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
-                              {message.sender === 'rambley' ? (
+                              {message.sender === 'guest' ? (
+                                <>
+                                  <UserCircle className="h-3 w-3" />
+                                  <span>{message.senderName || 'Guest'}</span>
+                                </>
+                              ) : message.sender === 'staff' ? (
+                                <>
+                                  <Users className="h-3 w-3 text-orange-600" />
+                                  <span className="text-orange-600 font-medium">{message.senderName || 'Staff'}</span>
+                                </>
+                              ) : message.sender === 'rambley' ? (
                                 <>
                                   <Bot className="h-3 w-3" />
                                   <span>Rambley</span>
@@ -569,31 +669,31 @@ export default function TaskDetailPage() {
                               )}
                             </div>
                           </div>
-                        )}
-                        <div className={cn(
-                          "px-4 py-2 rounded-lg",
-                          message.sender === 'guest'
-                            ? "bg-brand-vanilla text-brand-dark"
-                            : message.sender === 'staff'
-                              ? "bg-brand-dark text-brand-vanilla"
-                              : "bg-brand-purple text-white"
-                        )}>
-                          <p className="text-sm">{message.text}</p>
-                          <p className={cn(
-                            "text-xs mt-1",
+                          <div className={cn(
+                            "px-4 py-2 rounded-lg",
                             message.sender === 'guest'
-                              ? "text-brand-mid-gray"
+                              ? "bg-brand-vanilla text-brand-dark"
                               : message.sender === 'staff'
-                                ? "text-brand-vanilla/70"
-                                : "text-white/70"
+                                ? "bg-orange-100 text-orange-900 border border-orange-200"  // Staff = orange
+                                : "bg-brand-purple text-white"  // Host/Rambley = purple
                           )}>
-                            {message.timestamp}
-                          </p>
+                            <p className="text-sm">{message.text}</p>
+                            <p className={cn(
+                              "text-xs mt-1",
+                              message.sender === 'guest'
+                                ? "text-brand-mid-gray"
+                                : message.sender === 'staff'
+                                  ? "text-orange-600"
+                                  : "text-white/70"
+                            )}>
+                              {message.timestamp}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                      )}
+                    </motion.div>
+                  )
+                })}
               </AnimatePresence>
               {/* Scroll anchor - always scroll to this element */}
               <div ref={messagesEndRef} />
@@ -637,6 +737,67 @@ export default function TaskDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Staff Selector Modal */}
+      {showStaffSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden"
+          >
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold text-brand-dark">Assign Staff Member</h2>
+              <p className="text-sm text-brand-mid-gray">Select a staff member to handle this task</p>
+            </div>
+            
+            <div className="overflow-y-auto max-h-[50vh]">
+              {staffList.length === 0 ? (
+                <div className="p-4 text-center text-brand-mid-gray">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                  <p>Loading staff...</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {staffList.map((staff) => (
+                    <button
+                      key={staff.id}
+                      onClick={() => handleAssignStaff(staff)}
+                      disabled={assigning}
+                      className="w-full p-4 text-left hover:bg-brand-light/50 transition-colors flex items-center gap-3 disabled:opacity-50"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-medium">
+                        {staff.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'ST'}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-brand-dark">{staff.name}</h3>
+                        <p className="text-sm text-brand-mid-gray">{staff.role || 'Staff'}</p>
+                        {staff.phone && (
+                          <p className="text-xs text-brand-mid-gray">{staff.phone}</p>
+                        )}
+                      </div>
+                      {assigning && (
+                        <Loader2 className="h-4 w-4 animate-spin text-brand-purple" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t bg-gray-50">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowStaffSelector(false)}
+                disabled={assigning}
+              >
+                Cancel
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
