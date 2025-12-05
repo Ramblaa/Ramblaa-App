@@ -66,8 +66,9 @@ export async function processPendingScheduledMessages() {
           metadata: {
             propertyId: msg.property_id,
             bookingId: msg.booking_id,
-            scheduleType: 'scheduled',
             templateName: msg.template_name,
+            ruleId: msg.rule_id,
+            scheduledMessageId: msg.id,
           },
         });
 

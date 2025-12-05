@@ -146,6 +146,7 @@ export async function sendTemplateMessage({
 
 /**
  * Log scheduled/template message to database
+ * Includes task_action='scheduled' and content_sid for querying
  */
 async function logScheduledMessage({
   messageSid,
@@ -156,31 +157,41 @@ async function logScheduledMessage({
   propertyId,
   bookingId,
   templateName,
+  ruleId,
+  scheduledMessageId,
 }) {
   const db = getDb();
   const id = messageSid || uuidv4();
 
   try {
     // Create a body description for logging
-    const bodyDescription = `[Scheduled Template: ${templateName || contentSid}] Variables: ${JSON.stringify(contentVariables)}`;
+    const bodyDescription = `[Scheduled: ${templateName || 'Template'}] Variables: ${JSON.stringify(contentVariables)}`;
+
+    // Store ContentSid in reference_message_ids for tracking/querying
+    const contentSidRef = contentSid ? `ContentSid:${contentSid}` : null;
 
     await db.prepare(`
       INSERT INTO messages (
         id, from_number, to_number, body, message_type, requestor_role,
-        property_id, booking_id, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        property_id, booking_id, task_action, reference_message_ids,
+        content_sid, content_variables, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       id,
       from,
       to,
       bodyDescription,
-      'Scheduled',
+      'Scheduled',           // message_type = Scheduled
       'Rambley',
       propertyId || null,
-      bookingId || null
+      bookingId || null,
+      'scheduled',           // task_action = 'scheduled' for querying
+      contentSidRef,         // reference_message_ids = "ContentSid:HX..."
+      contentSid || null,    // Also store raw content_sid
+      contentVariables ? JSON.stringify(contentVariables) : null
     );
     
-    console.log(`[Twilio] Logged scheduled message ${id}`);
+    console.log(`[Twilio] Logged scheduled message ${id} (ContentSid: ${contentSid})`);
   } catch (error) {
     console.error('[Twilio] Failed to log scheduled message:', error.message);
   }

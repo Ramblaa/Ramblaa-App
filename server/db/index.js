@@ -80,6 +80,21 @@ async function runMigrations(client) {
       console.log(`[DB] Migration: Updated ${result.rowCount} tasks with default priority 'low'`);
     }
     
+    // Migration 3: Add content_sid and content_variables to messages table
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'messages' AND column_name = 'content_sid') THEN
+          ALTER TABLE messages ADD COLUMN content_sid TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'messages' AND column_name = 'content_variables') THEN
+          ALTER TABLE messages ADD COLUMN content_variables TEXT;
+        END IF;
+      END $$;
+    `);
+    
     console.log('[DB] Migrations completed');
   } catch (error) {
     console.error('[DB] Migration error:', error.message);

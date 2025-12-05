@@ -306,17 +306,25 @@ function calculateScheduledTime(rule, booking) {
  * @returns {boolean} - True if conditions are met
  */
 function meetsConditions(rule, booking) {
-  // IMPORTANT: Only apply rules to bookings created AFTER the rule was created
-  // This prevents backfilling old bookings when new rules are added
-  if (rule.created_at && booking.created_at) {
-    const ruleCreated = new Date(rule.created_at);
-    const bookingCreated = new Date(booking.created_at);
-    
-    if (bookingCreated < ruleCreated) {
-      console.log(`[ScheduleService] Rule ${rule.name}: skipped (booking created before rule)`);
-      return false;
+  // BACKFILL LOGIC:
+  // - ON_BOOKING_CREATED: Only for bookings created AFTER rule was created (no spam to old bookings)
+  // - Date-based triggers: Apply to ANY active booking if the schedule date hasn't passed yet
+  //   (e.g., a booking from 3 months ago can still get "2 days before check-in" if that date is upcoming)
+  
+  if (rule.trigger_type === TRIGGER_TYPES.ON_BOOKING_CREATED) {
+    // For "on booking created" - only apply to new bookings after rule was created
+    if (rule.created_at && booking.created_at) {
+      const ruleCreated = new Date(rule.created_at);
+      const bookingCreated = new Date(booking.created_at);
+      
+      if (bookingCreated < ruleCreated) {
+        console.log(`[ScheduleService] Rule "${rule.name}": skipped ON_BOOKING_CREATED (booking predates rule)`);
+        return false;
+      }
     }
   }
+  // For date-based triggers (DAYS_BEFORE_CHECKIN, etc.), we allow old bookings
+  // as long as the scheduled date is still in the future (handled in calculateScheduledTime)
   
   // Check minimum stay nights
   if (rule.min_stay_nights) {

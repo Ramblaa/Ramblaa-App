@@ -110,13 +110,15 @@ CREATE TABLE IF NOT EXISTS messages (
   to_number TEXT NOT NULL,
   body TEXT,
   media_url TEXT,
-  message_type TEXT DEFAULT 'Inbound',
+  message_type TEXT DEFAULT 'Inbound',  -- Inbound, Outbound, Scheduled
   requestor_role TEXT,
   staff_id TEXT,
-  reference_message_ids TEXT,
+  reference_message_ids TEXT,           -- For scheduled: "ContentSid:HX..." for tracking
   reference_task_ids TEXT,
-  task_action TEXT,  -- 'created' or 'updated' to show correct label in UI
+  task_action TEXT,                      -- 'created', 'updated', or 'scheduled'
   ai_enrichment_id TEXT,
+  content_sid TEXT,                      -- Twilio ContentSid for scheduled messages
+  content_variables TEXT,                -- JSON of template variables used
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (booking_id) REFERENCES bookings(id),
   FOREIGN KEY (property_id) REFERENCES properties(id)
