@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Send, Bot, BotOff, UserCircle, Users, User, MessageCircle, Clock, MapPin, Calendar, Loader2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -40,6 +40,30 @@ export default function TaskDetailPage() {
   const [newMessage, setNewMessage] = useState('')
   const [conversationStates, setConversationStates] = useState({})
   const [sending, setSending] = useState(false)
+
+  // Ref for scrolling to latest message
+  const messagesEndRef = useRef(null)
+  // Track if this is the initial load for the conversation
+  const isInitialLoad = useRef(true)
+
+  // Scroll to bottom of messages
+  const scrollToBottom = (instant = false) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'auto' : 'smooth' })
+  }
+
+  // Auto-scroll when conversation changes or messages update
+  useEffect(() => {
+    if (selectedConversation?.messages?.length > 0) {
+      // Use instant scroll on initial load, smooth scroll for new messages
+      scrollToBottom(isInitialLoad.current)
+      isInitialLoad.current = false
+    }
+  }, [selectedConversation?.messages])
+
+  // Reset initial load flag when switching conversations
+  useEffect(() => {
+    isInitialLoad.current = true
+  }, [selectedConversation?.id])
 
   // Load task on mount
   useEffect(() => {
@@ -571,6 +595,8 @@ export default function TaskDetailPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+              {/* Scroll anchor - always scroll to this element */}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
