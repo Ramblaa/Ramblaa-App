@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Calendar, Clock, MapPin, User, Plus, Wrench, Brush, Search, Package, MessageCircle, Check, Trash2, Loader2, AlertCircle, Repeat, ExternalLink } from 'lucide-react'
+import { Calendar, Clock, MapPin, User, Plus, Wrench, Brush, Search, Package, MessageCircle, Check, Trash2, Loader2, AlertCircle, Repeat, ExternalLink, Pencil, Pause, Play } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -45,6 +45,8 @@ export default function TasksPage() {
   const [saving, setSaving] = useState(false)
   const [recurringTemplates, setRecurringTemplates] = useState([])
   const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'recurring'
+  const [editingTemplate, setEditingTemplate] = useState(null) // template being edited
+  const [deletingTemplateId, setDeletingTemplateId] = useState(null)
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const [newTask, setNewTask] = useState({
@@ -165,6 +167,63 @@ export default function TasksPage() {
     } catch (err) {
       console.error('Failed to load property details', err)
       setPropertyDetails(null)
+    }
+  }
+
+  const handleEditTemplate = (template) => {
+    // Load property details for the template's property
+    loadPropertyDetails(template.propertyId)
+    setEditingTemplate(template)
+  }
+
+  const handleSaveTemplateEdit = async () => {
+    if (!editingTemplate) return
+    setSaving(true)
+    try {
+      await tasksApi.updateRecurringTask(editingTemplate.id, {
+        title: editingTemplate.title,
+        description: editingTemplate.description,
+        taskBucket: editingTemplate.taskBucket,
+        repeatType: editingTemplate.repeatType,
+        intervalDays: editingTemplate.intervalDays,
+        timeOfDay: editingTemplate.timeOfDay,
+        isActive: editingTemplate.isActive,
+      })
+      setEditingTemplate(null)
+      loadData()
+    } catch (err) {
+      console.error('Failed to update template', err)
+      alert(err.message || 'Failed to update template')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteTemplate = async (templateId) => {
+    if (!confirm('Are you sure you want to delete this recurring template? Existing task instances will remain.')) {
+      return
+    }
+    setDeletingTemplateId(templateId)
+    try {
+      await tasksApi.deleteRecurringTask(templateId)
+      loadData()
+    } catch (err) {
+      console.error('Failed to delete template', err)
+      alert(err.message || 'Failed to delete template')
+    } finally {
+      setDeletingTemplateId(null)
+    }
+  }
+
+  const handleToggleTemplateActive = async (template) => {
+    try {
+      await tasksApi.updateRecurringTask(template.id, {
+        isActive: !template.isActive,
+      })
+      loadData()
+    } catch (err) {
+      console.error('Failed to toggle template', err)
+      alert(err.message || 'Failed to update template')
     }
   }
 
@@ -522,6 +581,51 @@ export default function TasksPage() {
                         <p className="text-xs text-ink-400">
                           Next: {template.nextRunAt ? format(new Date(template.nextRunAt), 'MMM d, yyyy') : 'N/A'}
                         </p>
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditTemplate(template)}
+                            className="h-8"
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleToggleTemplateActive(template)}
+                            className={cn("h-8", template.isActive ? "text-amber-600 hover:text-amber-700" : "text-green-600 hover:text-green-700")}
+                          >
+                            {template.isActive ? (
+                              <>
+                                <Pause className="h-3 w-3 mr-1" />
+                                Pause
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-3 w-3 mr-1" />
+                                Resume
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteTemplate(template.id)}
+                            disabled={deletingTemplateId === template.id}
+                            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            {deletingTemplateId === template.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -725,6 +829,94 @@ export default function TasksPage() {
               <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
               <Button onClick={handleSaveTask} disabled={saving}>
                 {saving ? 'Saving...' : 'Save Task'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Recurring Template Modal */}
+      {editingTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div>
+                <h2 className="text-xl font-semibold text-ink-900">Edit Recurring Template</h2>
+                <p className="text-sm text-ink-500">{editingTemplate.propertyName}</p>
+              </div>
+              <Button variant="ghost" onClick={() => setEditingTemplate(null)}>Close</Button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-ink-800">Title</label>
+                <Input
+                  value={editingTemplate.title}
+                  onChange={(e) => setEditingTemplate(prev => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-ink-800">Description</label>
+                <Input
+                  value={editingTemplate.description || ''}
+                  onChange={(e) => setEditingTemplate(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-ink-800">Category</label>
+                <Input
+                  value={editingTemplate.taskBucket || ''}
+                  onChange={(e) => setEditingTemplate(prev => ({ ...prev, taskBucket: e.target.value }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-ink-800">Repeat</label>
+                  <select
+                    value={editingTemplate.repeatType}
+                    onChange={(e) => setEditingTemplate(prev => ({ ...prev, repeatType: e.target.value }))}
+                    className="h-10 w-full rounded-md border border-ink-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  >
+                    <option value="DAILY">Daily</option>
+                    <option value="WEEKLY">Weekly</option>
+                    <option value="MONTHLY">Monthly</option>
+                    <option value="INTERVAL">Every N days</option>
+                  </select>
+                </div>
+                {editingTemplate.repeatType === 'INTERVAL' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-ink-800">Every N days</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={editingTemplate.intervalDays}
+                      onChange={(e) => setEditingTemplate(prev => ({ ...prev, intervalDays: Number(e.target.value || 1) }))}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-ink-800">Time of day</label>
+                <Input
+                  type="time"
+                  value={editingTemplate.timeOfDay || '09:00'}
+                  onChange={(e) => setEditingTemplate(prev => ({ ...prev, timeOfDay: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="templateActive"
+                  checked={editingTemplate.isActive}
+                  onChange={(e) => setEditingTemplate(prev => ({ ...prev, isActive: e.target.checked }))}
+                  className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-600"
+                />
+                <label htmlFor="templateActive" className="text-sm text-ink-700">Active (will create new tasks)</label>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t bg-ink-50 flex items-center justify-end gap-3">
+              <Button variant="ghost" onClick={() => setEditingTemplate(null)}>Cancel</Button>
+              <Button onClick={handleSaveTemplateEdit} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>
