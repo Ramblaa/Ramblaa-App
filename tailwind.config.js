@@ -17,53 +17,90 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+      },
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // Semantic tokens (mapped via CSS variables)
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         primary: {
-          DEFAULT: "#9A1750",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
         },
         secondary: {
-          DEFAULT: "#ECE4B7",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
         },
+        // Brand palette (Sage Green)
         brand: {
-          purple: "#9A1750",
-          vanilla: "#ECE4B7",
-          dark: "#1A1A1D",
-          "mid-gray": "#4E4E50",
-          "light-gray": "#9CA3AF",
-          light: "#F5F5F5",
+          50: "#F4F7F4",
+          100: "#E8EFE8",
+          200: "#C9D9C9",
+          300: "#A3BEA3",
+          400: "#7BA37B",
+          500: "#5A8A5A",
+          600: "#4A7A4A",
+          700: "#3A633A",
+          800: "#2D4D2D",
+          900: "#1F361F",
+        },
+        // Ink palette (Charcoal neutrals)
+        ink: {
+          0: "#FAFAF8",
+          50: "#F5F5F3",
+          100: "#EBEBEA",
+          200: "#DCDCDA",
+          300: "#B8B8B5",
+          400: "#8F8F8C",
+          500: "#6B6B68",
+          600: "#525250",
+          700: "#3D3D3B",
+          800: "#292927",
+          900: "#1A1A18",
+        },
+        // Sand palette (Warm accent)
+        sand: {
+          100: "#FAF6F0",
+          200: "#F0E8DA",
+          300: "#E0D4C0",
+          400: "#C4B49A",
+          500: "#A89878",
         },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        DEFAULT: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        md: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        lg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
       },
       keyframes: {
         "accordion-down": {
@@ -83,4 +120,3 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
 }
-
