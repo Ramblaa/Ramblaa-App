@@ -41,8 +41,8 @@ export default function ResourcesPage() {
       >
         {/* Header */}
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-brand-dark">Resources</h1>
-          <p className="text-sm sm:text-base text-brand-mid-gray">Manage FAQs and task definitions for your properties</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink-900">Resources</h1>
+          <p className="text-sm sm:text-base text-ink-500">Manage FAQs and task definitions for your properties</p>
         </div>
 
         {/* Tabs */}
@@ -52,8 +52,8 @@ export default function ResourcesPage() {
             className={cn(
               "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
               activeTab === 'faqs'
-                ? "border-brand-purple text-brand-purple"
-                : "border-transparent text-brand-mid-gray hover:text-brand-dark hover:border-gray-300"
+                ? "border-brand-600 text-brand-600"
+                : "border-transparent text-ink-500 hover:text-ink-900 hover:border-gray-300"
             )}
           >
             <HelpCircle className="inline-block mr-2 h-4 w-4" />
@@ -64,8 +64,8 @@ export default function ResourcesPage() {
             className={cn(
               "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
               activeTab === 'tasks'
-                ? "border-brand-purple text-brand-purple"
-                : "border-transparent text-brand-mid-gray hover:text-brand-dark hover:border-gray-300"
+                ? "border-brand-600 text-brand-600"
+                : "border-transparent text-ink-500 hover:text-ink-900 hover:border-gray-300"
             )}
           >
             <ClipboardList className="inline-block mr-2 h-4 w-4" />
@@ -221,8 +221,8 @@ function FAQsPanel() {
   if (loading && !faqs.length) {
     return (
       <div className="text-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-purple mx-auto" />
-        <p className="mt-2 text-brand-mid-gray">Loading FAQs...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
+        <p className="mt-2 text-ink-500">Loading FAQs...</p>
       </div>
     )
   }
@@ -251,7 +251,7 @@ function FAQsPanel() {
 
       {/* Search */}
       <div className="flex items-center gap-2">
-        <Search className="h-4 w-4 text-brand-mid-gray" />
+        <Search className="h-4 w-4 text-ink-500" />
         <Input 
           placeholder="Search FAQs..."
           value={searchTerm}
@@ -264,9 +264,9 @@ function FAQsPanel() {
       {filteredFaqs.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <HelpCircle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-            <h3 className="text-lg font-medium text-brand-dark mb-2">No FAQs found</h3>
-            <p className="text-brand-mid-gray">
+            <HelpCircle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+            <h3 className="text-lg font-medium text-ink-900 mb-2">No FAQs found</h3>
+            <p className="text-ink-500">
               {searchTerm ? `No results for "${searchTerm}"` : 'Add FAQs to help guests get quick answers.'}
             </p>
           </CardContent>
@@ -278,8 +278,8 @@ function FAQsPanel() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h4 className="font-medium text-brand-dark">{faq.subCategory}</h4>
-                    <p className="text-sm text-brand-mid-gray mt-1">{faq.description}</p>
+                    <h4 className="font-medium text-ink-900">{faq.subCategory}</h4>
+                    <p className="text-sm text-ink-500 mt-1">{faq.description}</p>
                     {faq.details && Object.keys(faq.details).length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {Object.entries(faq.details).map(([key, value]) => (
@@ -320,7 +320,7 @@ function FAQsPanel() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-brand-dark">
+              <h2 className="text-lg font-semibold text-ink-900">
                 {editingFaq ? 'Edit FAQ' : 'Add New FAQ'}
               </h2>
               <Button 
@@ -581,8 +581,8 @@ function TaskDefinitionsPanel() {
   if (loading && !taskDefs.length) {
     return (
       <div className="text-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-purple mx-auto" />
-        <p className="mt-2 text-brand-mid-gray">Loading task definitions...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
+        <p className="mt-2 text-ink-500">Loading task definitions...</p>
       </div>
     )
   }
@@ -622,9 +622,9 @@ function TaskDefinitionsPanel() {
       {taskDefs.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <ClipboardList className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-            <h3 className="text-lg font-medium text-brand-dark mb-2">No Task Definitions</h3>
-            <p className="text-brand-mid-gray">
+            <ClipboardList className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+            <h3 className="text-lg font-medium text-ink-900 mb-2">No Task Definitions</h3>
+            <p className="text-ink-500">
               Add task definitions to automate staff assignments when guests make requests.
             </p>
           </CardContent>
@@ -637,27 +637,27 @@ function TaskDefinitionsPanel() {
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center gap-3">
-                      <h4 className="font-semibold text-brand-dark text-lg">{taskDef.subCategory}</h4>
+                      <h4 className="font-semibold text-ink-900 text-lg">{taskDef.subCategory}</h4>
                       {taskDef.details?.primaryCategory && (
                         <Badge variant="outline">{taskDef.details.primaryCategory}</Badge>
                       )}
                     </div>
                     
                     {taskDef.details?.description && (
-                      <p className="text-sm text-brand-mid-gray">{taskDef.details.description}</p>
+                      <p className="text-sm text-ink-500">{taskDef.details.description}</p>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {taskDef.staffRequirements && (
                         <div className="bg-gray-50 p-3 rounded">
-                          <span className="font-medium text-brand-dark">Staff Requirements:</span>
-                          <p className="text-brand-mid-gray mt-1">{taskDef.staffRequirements}</p>
+                          <span className="font-medium text-ink-900">Staff Requirements:</span>
+                          <p className="text-ink-500 mt-1">{taskDef.staffRequirements}</p>
                         </div>
                       )}
                       {taskDef.guestRequirements && (
                         <div className="bg-gray-50 p-3 rounded">
-                          <span className="font-medium text-brand-dark">Guest Requirements:</span>
-                          <p className="text-brand-mid-gray mt-1">{taskDef.guestRequirements}</p>
+                          <span className="font-medium text-ink-900">Guest Requirements:</span>
+                          <p className="text-ink-500 mt-1">{taskDef.guestRequirements}</p>
                         </div>
                       )}
                       {taskDef.hostEscalation && (
@@ -677,14 +677,14 @@ function TaskDefinitionsPanel() {
                     </div>
                     {taskDef.staffName ? (
                       <div>
-                        <p className="font-medium text-brand-dark">{taskDef.staffName}</p>
-                        <div className="flex items-center gap-1 text-sm text-brand-mid-gray mt-1">
+                        <p className="font-medium text-ink-900">{taskDef.staffName}</p>
+                        <div className="flex items-center gap-1 text-sm text-ink-500 mt-1">
                           <Phone className="h-3 w-3" />
                           {taskDef.staffPhone?.replace('whatsapp:', '')}
                         </div>
                       </div>
                     ) : (
-                      <p className="text-brand-mid-gray text-sm">No staff assigned</p>
+                      <p className="text-ink-500 text-sm">No staff assigned</p>
                     )}
                   </div>
 
@@ -718,7 +718,7 @@ function TaskDefinitionsPanel() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-brand-dark">
+              <h2 className="text-lg font-semibold text-ink-900">
                 {editingTaskDef ? 'Edit Task Definition' : 'Add Task Definition'}
               </h2>
               <Button 

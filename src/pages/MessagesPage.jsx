@@ -255,14 +255,14 @@ export default function MessagesPage() {
     if (message.sender === 'guest') return null
     if (message.senderType === 'rambley') {
       return (
-        <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
+        <div className="flex items-center gap-1 text-xs text-ink-500">
           <Bot className="h-3 w-3" />
           <span>Rambley</span>
         </div>
       )
     } else {
       return (
-        <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
+        <div className="flex items-center gap-1 text-xs text-ink-500">
           <User className="h-3 w-3" />
           <span>Host</span>
         </div>
@@ -270,15 +270,21 @@ export default function MessagesPage() {
     }
   }
 
-  const renderTaskLinks = (taskIds, taskAction) => {
+  const renderTaskLinks = (taskIds, taskAction, isHostMessage = false) => {
     if (!taskIds || taskIds.length === 0) return null
 
     // Show "Task created" or "Task updated" based on taskAction
     const label = taskAction === 'created' ? 'Task created:' : 'Task updated:'
 
     return (
-      <div className="mt-2 pt-2 border-t border-brand-mid-gray/20">
-        <div className="flex items-center gap-1 text-xs text-brand-mid-gray mb-1">
+      <div className={cn(
+        "mt-2 pt-2 border-t",
+        isHostMessage ? "border-white/20" : "border-ink-300/20"
+      )}>
+        <div className={cn(
+          "flex items-center gap-1 text-xs mb-1",
+          isHostMessage ? "text-white/80" : "text-ink-500"
+        )}>
           <CheckSquare className="h-3 w-3" />
           <span>{label}</span>
         </div>
@@ -287,13 +293,18 @@ export default function MessagesPage() {
             <button
               key={taskId}
               onClick={() => handleTaskLink(taskId)}
-              className="flex items-center gap-2 text-xs text-brand-purple hover:text-brand-purple/80 transition-colors group"
+              className={cn(
+                "flex items-center gap-2 text-xs transition-colors group",
+                isHostMessage 
+                  ? "text-white hover:text-white/80" 
+                  : "text-brand-600 hover:text-brand-700"
+              )}
             >
               <div className={cn(
                 "w-2 h-2 rounded-full",
-                taskAction === 'created' ? "bg-green-500" : "bg-yellow-500"
+                taskAction === 'created' ? "bg-green-400" : "bg-yellow-400"
               )} />
-              <span className="flex-1 text-left truncate">Task {taskId.slice(0, 8)}...</span>
+              <span className="flex-1 text-left truncate underline underline-offset-2">Task {taskId.slice(0, 8)}...</span>
               <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           ))}
@@ -325,7 +336,7 @@ export default function MessagesPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
       </div>
     )
   }
@@ -338,12 +349,12 @@ export default function MessagesPage() {
         selectedConversation ? "hidden lg:flex" : "flex"
       )}>
         <div className="p-6 border-b flex-shrink-0">
-          <h1 className="text-2xl font-bold text-brand-dark">Messages</h1>
-          <p className="text-brand-mid-gray">Guest conversations</p>
+          <h1 className="text-2xl font-bold text-ink-900">Messages</h1>
+          <p className="text-ink-500">Guest conversations</p>
           
           {/* Search Input */}
           <div className="mt-4 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-brand-mid-gray" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ink-500" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -365,40 +376,40 @@ export default function MessagesPage() {
                 whileHover={{ backgroundColor: 'rgba(154, 23, 80, 0.05)' }}
                 className={cn(
                   "p-4 border-b cursor-pointer transition-colors",
-                  selectedConversation?.id === conversation.id ? "bg-brand-purple/10 border-brand-purple/20" : ""
+                  selectedConversation?.id === conversation.id ? "bg-brand-600/10 border-brand-600/20" : ""
                 )}
                 onClick={() => setSelectedConversation(conversation)}
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-brand-vanilla text-brand-dark rounded-full flex items-center justify-center font-medium text-sm">
+                  <div className="w-10 h-10 bg-brand-100 text-ink-900 rounded-full flex items-center justify-center font-medium text-sm">
                     {getInitials(conversation.guestName)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-brand-dark truncate">{conversation.guestName}</h3>
+                      <h3 className="font-semibold text-ink-900 truncate">{conversation.guestName}</h3>
                       {conversation.unread > 0 && (
                         <Badge variant="default" className="ml-2">
                           {conversation.unread}
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-brand-mid-gray mb-1">
+                    <div className="flex items-center gap-1 text-xs text-ink-500 mb-1">
                       <Phone className="h-3 w-3" />
                       <span>{conversation.phone}</span>
                       <span>•</span>
                       <span>{conversation.property}</span>
                     </div>
-                    <p className="text-sm text-brand-mid-gray truncate">{conversation.lastMessage}</p>
-                    <p className="text-xs text-brand-mid-gray mt-1">{formatTimestamp(conversation.timestamp)}</p>
+                    <p className="text-sm text-ink-500 truncate">{conversation.lastMessage}</p>
+                    <p className="text-xs text-ink-500 mt-1">{formatTimestamp(conversation.timestamp)}</p>
                   </div>
                 </div>
               </motion.div>
             ))
           ) : (
             <div className="p-8 text-center">
-              <MessageCircle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-              <h3 className="text-lg font-medium text-brand-dark mb-2">No conversations found</h3>
-              <p className="text-brand-mid-gray text-sm">
+              <MessageCircle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+              <h3 className="text-lg font-medium text-ink-900 mb-2">No conversations found</h3>
+              <p className="text-ink-500 text-sm">
                 {searchQuery ? `No results for "${searchQuery}"` : 'No conversations available'}
               </p>
             </div>
@@ -424,12 +435,12 @@ export default function MessagesPage() {
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div className="w-10 h-10 bg-brand-vanilla text-brand-dark rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="w-10 h-10 bg-brand-100 text-ink-900 rounded-full flex items-center justify-center font-medium text-sm">
                   {getInitials(displayData.guestName)}
                 </div>
                 <div>
-                  <h2 className="font-semibold text-brand-dark">{displayData.guestName}</h2>
-                  <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
+                  <h2 className="font-semibold text-ink-900">{displayData.guestName}</h2>
+                  <div className="flex items-center gap-1 text-xs text-ink-500">
                     <Phone className="h-3 w-3" />
                     <span>{displayData.phone}</span>
                     {displayData.property && displayData.property !== 'Unknown Property' && (
@@ -444,7 +455,7 @@ export default function MessagesPage() {
                     <Button 
                       variant="link" 
                       size="sm" 
-                      className="h-auto p-0 text-xs text-brand-purple"
+                      className="h-auto p-0 text-xs text-brand-600"
                       onClick={openBookingSelector}
                     >
                       <Link2 className="h-3 w-3 mr-1" />
@@ -456,7 +467,7 @@ export default function MessagesPage() {
 
               {/* Auto Response Toggle */}
               <div className="flex items-center gap-3">
-                <span className="text-sm text-brand-mid-gray">Auto Response</span>
+                <span className="text-sm text-ink-500">Auto Response</span>
                 <Button
                   variant={isAutoResponseEnabled ? "default" : "outline"}
                   size="sm"
@@ -464,8 +475,8 @@ export default function MessagesPage() {
                   className={cn(
                     "transition-all duration-200",
                     isAutoResponseEnabled 
-                      ? "bg-brand-purple hover:bg-brand-purple/90 text-white" 
-                      : "border-brand-purple text-brand-purple hover:bg-brand-purple/10"
+                      ? "bg-brand-600 hover:bg-brand-600/90 text-white" 
+                      : "border-brand-600 text-brand-600 hover:bg-brand-600/10"
                   )}
                 >
                   {isAutoResponseEnabled ? (
@@ -512,21 +523,21 @@ export default function MessagesPage() {
                       <div className={cn(
                         "px-4 py-2 rounded-lg",
                         message.sender === 'host' 
-                          ? "bg-brand-purple text-white"
-                          : "bg-brand-vanilla text-brand-dark"
+                          ? "bg-brand-600 text-white"
+                          : "bg-brand-100 text-ink-900"
                       )}>
                         <p className="text-sm">{message.text}</p>
                         <p className={cn(
                           "text-xs mt-1",
                           message.sender === 'host' 
                             ? "text-white/70"
-                            : "text-brand-mid-gray"
+                            : "text-ink-500"
                         )}>
                           {message.timestamp}
                         </p>
                         
                         {/* Task Links */}
-                        {renderTaskLinks(message.taskIds, message.taskAction)}
+                        {renderTaskLinks(message.taskIds, message.taskAction, message.sender === 'host')}
                       </div>
                     </div>
                   </motion.div>
@@ -539,8 +550,8 @@ export default function MessagesPage() {
             {/* Message Input */}
             <div className="p-4 border-t bg-background flex-shrink-0">
               {!isAutoResponseEnabled && (
-                <div className="mb-3 p-2 bg-brand-vanilla/50 rounded-lg border border-brand-vanilla">
-                  <div className="flex items-center gap-2 text-sm text-brand-dark">
+                <div className="mb-3 p-2 bg-brand-100/50 rounded-lg border border-brand-100">
+                  <div className="flex items-center gap-2 text-sm text-ink-900">
                     <BotOff className="h-4 w-4" />
                     <span>Auto-response is disabled. You're in manual mode for this conversation.</span>
                   </div>
@@ -567,9 +578,9 @@ export default function MessagesPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center bg-brand-light/50">
             <div className="text-center">
-              <MessageCircle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-              <h3 className="text-lg font-medium text-brand-dark mb-2">Select a conversation</h3>
-              <p className="text-brand-mid-gray">Choose a guest conversation to start messaging</p>
+              <MessageCircle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+              <h3 className="text-lg font-medium text-ink-900 mb-2">Select a conversation</h3>
+              <p className="text-ink-500">Choose a guest conversation to start messaging</p>
             </div>
           </div>
         )}
@@ -580,22 +591,22 @@ export default function MessagesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-brand-dark">Link to Booking</h2>
+              <h2 className="text-lg font-semibold text-ink-900">Link to Booking</h2>
               <Button variant="ghost" size="sm" onClick={() => setShowBookingSelector(false)} className="h-8 w-8 p-0">
                 ×
               </Button>
             </div>
             
-            <p className="text-sm text-brand-mid-gray mb-4">
+            <p className="text-sm text-ink-500 mb-4">
               Select a booking to associate with this conversation. This helps track messages by guest stay.
             </p>
 
             {loadingBookings ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-brand-purple" />
+                <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
               </div>
             ) : availableBookings.length === 0 ? (
-              <div className="text-center py-8 text-brand-mid-gray">
+              <div className="text-center py-8 text-ink-500">
                 No bookings available
               </div>
             ) : (
@@ -604,16 +615,16 @@ export default function MessagesPage() {
                   <button
                     key={booking.id}
                     onClick={() => linkToBooking(booking.id)}
-                    className="w-full p-3 text-left rounded-lg border hover:border-brand-purple hover:bg-brand-purple/5 transition-colors"
+                    className="w-full p-3 text-left rounded-lg border hover:border-brand-600 hover:bg-brand-600/5 transition-colors"
                   >
-                    <div className="font-medium text-brand-dark">{booking.guestName}</div>
-                    <div className="flex items-center gap-2 text-xs text-brand-mid-gray mt-1">
+                    <div className="font-medium text-ink-900">{booking.guestName}</div>
+                    <div className="flex items-center gap-2 text-xs text-ink-500 mt-1">
                       <Calendar className="h-3 w-3" />
                       <span>
                         {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
                       </span>
                     </div>
-                    <div className="text-xs text-brand-mid-gray mt-1">{booking.propertyName}</div>
+                    <div className="text-xs text-ink-500 mt-1">{booking.propertyName}</div>
                   </button>
                 ))}
               </div>

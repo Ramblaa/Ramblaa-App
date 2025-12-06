@@ -256,8 +256,8 @@ export default function PropertiesPage() {
           Back to Properties
         </Button>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-brand-dark">{selectedProperty.name}</h3>
-          <p className="text-brand-mid-gray">{selectedProperty.address}</p>
+          <h3 className="text-lg font-semibold text-ink-900">{selectedProperty.name}</h3>
+          <p className="text-ink-500">{selectedProperty.address}</p>
         </div>
         <div className="flex gap-2">
           {!editingProperty ? (
@@ -325,7 +325,7 @@ export default function PropertiesPage() {
               value={editingProperty ? editForm.property_type : selectedProperty.property_type || selectedProperty.type || ''}
               onChange={(e) => updateEditForm('property_type', e.target.value)}
               disabled={!editingProperty}
-              className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple disabled:bg-gray-50"
+              className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:bg-gray-50"
             >
               <option value="">Select Type</option>
               <option value="villa">Villa</option>
@@ -486,7 +486,7 @@ export default function PropertiesPage() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold text-brand-dark">Properties</h3>
+          <h3 className="text-lg font-semibold text-ink-900">Properties</h3>
           <RefreshButton />
         </div>
         <Button onClick={() => setShowAddModal(true)} disabled={loading}>
@@ -498,7 +498,7 @@ export default function PropertiesPage() {
       <div className="grid gap-4">
         {loading && properties.length === 0 ? (
           <div className="flex items-center justify-center h-64">
-            <div className="flex items-center gap-2 text-brand-mid-gray">
+            <div className="flex items-center gap-2 text-ink-500">
               <RefreshCw className="h-5 w-5 animate-spin" />
               <span>Loading properties...</span>
             </div>
@@ -507,7 +507,7 @@ export default function PropertiesPage() {
           <div className="flex flex-col items-center justify-center h-64 space-y-4">
             <div className="text-red-500 text-center">
               <p className="font-medium">Failed to load properties</p>
-              <p className="text-sm text-brand-mid-gray">{error}</p>
+              <p className="text-sm text-ink-500">{error}</p>
             </div>
             <Button onClick={loadData} variant="outline">
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -517,8 +517,8 @@ export default function PropertiesPage() {
         ) : properties.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 space-y-4">
             <div className="text-center">
-              <p className="font-medium text-brand-dark">No properties found</p>
-              <p className="text-sm text-brand-mid-gray">Add your first property to get started!</p>
+              <p className="font-medium text-ink-900">No properties found</p>
+              <p className="text-sm text-ink-500">Add your first property to get started!</p>
             </div>
             <Button onClick={() => setShowAddModal(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -532,13 +532,13 @@ export default function PropertiesPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1" onClick={() => setSelectedProperty(property)}>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-brand-dark">{property.name}</h4>
+                      <h4 className="font-semibold text-ink-900">{property.name}</h4>
                       <Badge variant={property.status === 'active' ? 'default' : 'secondary'}>
                         {property.status}
                       </Badge>
                     </div>
-                    <p className="text-brand-mid-gray text-sm mt-1">{property.address}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-brand-mid-gray">
+                    <p className="text-ink-500 text-sm mt-1">{property.address}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-ink-500">
                       <span>Check-in: {property.checkin_time || property.checkinTime || '3:00 PM'}</span>
                       <span>Check-out: {property.checkout_time || property.checkoutTime || '11:00 AM'}</span>
                     </div>

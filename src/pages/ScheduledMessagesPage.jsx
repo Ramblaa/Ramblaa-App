@@ -281,7 +281,7 @@ export default function ScheduledMessagesPage() {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-brand-purple border-t-transparent rounded-full"
+          className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full"
         />
       </div>
     )
@@ -294,8 +294,8 @@ export default function ScheduledMessagesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-brand-dark">Scheduled Messages</h1>
-          <p className="text-brand-mid-gray mt-1">
+          <h1 className="text-2xl font-bold text-ink-900">Scheduled Messages</h1>
+          <p className="text-ink-500 mt-1">
             Automate guest communications at key moments in their stay
           </p>
         </div>
@@ -303,7 +303,7 @@ export default function ScheduledMessagesPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={fetchData}
-            className="p-2 text-brand-mid-gray hover:text-brand-dark rounded-lg hover:bg-gray-100"
+            className="p-2 text-ink-500 hover:text-ink-900 rounded-lg hover:bg-gray-100"
           >
             <RefreshCw className="w-5 h-5" />
           </button>
@@ -311,7 +311,7 @@ export default function ScheduledMessagesPage() {
           {activeTab === 'schedules' && (
             <button
               onClick={openNewSchedule}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-600/90"
             >
               <Plus className="w-4 h-4" />
               New Schedule
@@ -329,8 +329,8 @@ export default function ScheduledMessagesPage() {
                 <Clock className="w-5 h-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-brand-dark">{stats.byStatus?.pending || 0}</p>
-                <p className="text-sm text-brand-mid-gray">Pending</p>
+                <p className="text-2xl font-bold text-ink-900">{stats.byStatus?.pending || 0}</p>
+                <p className="text-sm text-ink-500">Pending</p>
               </div>
             </div>
           </div>
@@ -341,8 +341,8 @@ export default function ScheduledMessagesPage() {
                 <Check className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-brand-dark">{stats.byStatus?.sent || 0}</p>
-                <p className="text-sm text-brand-mid-gray">Sent</p>
+                <p className="text-2xl font-bold text-ink-900">{stats.byStatus?.sent || 0}</p>
+                <p className="text-sm text-ink-500">Sent</p>
               </div>
             </div>
           </div>
@@ -353,8 +353,8 @@ export default function ScheduledMessagesPage() {
                 <AlertCircle className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-brand-dark">{stats.byStatus?.failed || 0}</p>
-                <p className="text-sm text-brand-mid-gray">Failed</p>
+                <p className="text-2xl font-bold text-ink-900">{stats.byStatus?.failed || 0}</p>
+                <p className="text-sm text-ink-500">Failed</p>
               </div>
             </div>
           </div>
@@ -365,8 +365,8 @@ export default function ScheduledMessagesPage() {
                 <Send className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-brand-dark">{stats.upcomingNext24Hours || 0}</p>
-                <p className="text-sm text-brand-mid-gray">Next 24h</p>
+                <p className="text-2xl font-bold text-ink-900">{stats.upcomingNext24Hours || 0}</p>
+                <p className="text-sm text-ink-500">Next 24h</p>
               </div>
             </div>
           </div>
@@ -391,8 +391,8 @@ export default function ScheduledMessagesPage() {
               className={cn(
                 "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
                 activeTab === tab
-                  ? "border-brand-purple text-brand-purple"
-                  : "border-transparent text-brand-mid-gray hover:text-brand-dark"
+                  ? "border-brand-600 text-brand-600"
+                  : "border-transparent text-ink-500 hover:text-ink-900"
               )}
             >
               {tab === 'queue' ? 'Message Queue' : 'Scheduled Messages'}
@@ -413,14 +413,14 @@ export default function ScheduledMessagesPage() {
           >
             {schedules.length === 0 ? (
               <div className="bg-white rounded-xl p-8 text-center border border-gray-100">
-                <Calendar className="w-12 h-12 text-brand-mid-gray mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-brand-dark mb-2">No Scheduled Messages Yet</h3>
-                <p className="text-brand-mid-gray mb-4">
+                <Calendar className="w-12 h-12 text-ink-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-ink-900 mb-2">No Scheduled Messages Yet</h3>
+                <p className="text-ink-500 mb-4">
                   Create your first scheduled message to automate guest communications
                 </p>
                 <button
                   onClick={openNewSchedule}
-                  className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90"
+                  className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-600/90"
                 >
                   Create Schedule
                 </button>
@@ -435,7 +435,7 @@ export default function ScheduledMessagesPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-brand-dark">{schedule.templateName || schedule.name}</h3>
+                          <h3 className="font-semibold text-ink-900">{schedule.templateName || schedule.name}</h3>
                           <span className={cn(
                             "px-2 py-0.5 text-xs rounded-full",
                             schedule.isActive 
@@ -446,28 +446,28 @@ export default function ScheduledMessagesPage() {
                           </span>
                         </div>
                         
-                        <p className="text-sm text-brand-mid-gray">
+                        <p className="text-sm text-ink-500">
                           Property: {schedule.propertyName}
                         </p>
                         
                         <div className="flex items-center gap-4 mt-2 text-sm">
-                          <span className="px-2 py-1 bg-brand-purple/10 text-brand-purple rounded">
+                          <span className="px-2 py-1 bg-brand-600/10 text-brand-600 rounded">
                             {TRIGGER_TYPE_LABELS[schedule.triggerType] || schedule.triggerType}
                           </span>
                           {schedule.triggerOffsetDays !== 0 && (
-                            <span className="text-brand-mid-gray">
+                            <span className="text-ink-500">
                               {Math.abs(schedule.triggerOffsetDays)} day(s)
                             </span>
                           )}
                           {schedule.triggerType !== 'ON_BOOKING_CREATED' && (
-                            <span className="text-brand-mid-gray">
+                            <span className="text-ink-500">
                               at {schedule.triggerTime?.slice(0, 5) || '09:00'}
                             </span>
                           )}
                         </div>
                         
                         {schedule.contentSid && (
-                          <p className="text-xs text-brand-mid-gray mt-2 font-mono">
+                          <p className="text-xs text-ink-500 mt-2 font-mono">
                             ContentSid: {schedule.contentSid}
                           </p>
                         )}
@@ -488,13 +488,13 @@ export default function ScheduledMessagesPage() {
                         </button>
                         <button
                           onClick={() => openEditSchedule(schedule)}
-                          className="p-2 text-brand-mid-gray hover:text-brand-dark rounded-lg hover:bg-gray-100"
+                          className="p-2 text-ink-500 hover:text-ink-900 rounded-lg hover:bg-gray-100"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteSchedule(schedule)}
-                          className="p-2 text-brand-mid-gray hover:text-red-600 rounded-lg hover:bg-red-50"
+                          className="p-2 text-ink-500 hover:text-red-600 rounded-lg hover:bg-red-50"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -516,7 +516,7 @@ export default function ScheduledMessagesPage() {
             className="space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-brand-dark">Message Queue</h2>
+              <h2 className="text-lg font-medium text-ink-900">Message Queue</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleRetryFailed}
@@ -526,7 +526,7 @@ export default function ScheduledMessagesPage() {
                 </button>
                 <button
                   onClick={handleProcessNow}
-                  className="px-3 py-1.5 text-sm bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90"
+                  className="px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-600/90"
                 >
                   Process Now
                 </button>
@@ -535,9 +535,9 @@ export default function ScheduledMessagesPage() {
             
             {scheduledMessages.length === 0 ? (
               <div className="bg-white rounded-xl p-8 text-center border border-gray-100">
-                <Clock className="w-12 h-12 text-brand-mid-gray mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-brand-dark mb-2">No Scheduled Messages</h3>
-                <p className="text-brand-mid-gray">
+                <Clock className="w-12 h-12 text-ink-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-ink-900 mb-2">No Scheduled Messages</h3>
+                <p className="text-ink-500">
                   Messages will appear here when bookings trigger your schedules
                 </p>
               </div>
@@ -546,11 +546,11 @@ export default function ScheduledMessagesPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="text-left p-3 text-sm font-medium text-brand-mid-gray">Guest</th>
-                      <th className="text-left p-3 text-sm font-medium text-brand-mid-gray">Schedule</th>
-                      <th className="text-left p-3 text-sm font-medium text-brand-mid-gray">Scheduled For</th>
-                      <th className="text-left p-3 text-sm font-medium text-brand-mid-gray">Status</th>
-                      <th className="text-left p-3 text-sm font-medium text-brand-mid-gray">Actions</th>
+                      <th className="text-left p-3 text-sm font-medium text-ink-500">Guest</th>
+                      <th className="text-left p-3 text-sm font-medium text-ink-500">Schedule</th>
+                      <th className="text-left p-3 text-sm font-medium text-ink-500">Scheduled For</th>
+                      <th className="text-left p-3 text-sm font-medium text-ink-500">Status</th>
+                      <th className="text-left p-3 text-sm font-medium text-ink-500">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -558,17 +558,17 @@ export default function ScheduledMessagesPage() {
                       <tr key={msg.id} className="border-b border-gray-50 last:border-0">
                         <td className="p-3">
                           <div>
-                            <p className="font-medium text-brand-dark">{msg.guestName}</p>
-                            <p className="text-xs text-brand-mid-gray">{msg.toNumber}</p>
+                            <p className="font-medium text-ink-900">{msg.guestName}</p>
+                            <p className="text-xs text-ink-500">{msg.toNumber}</p>
                           </div>
                         </td>
                         <td className="p-3">
                           <div>
-                            <p className="text-sm text-brand-dark">{msg.templateName}</p>
-                            <p className="text-xs text-brand-mid-gray">{msg.ruleName}</p>
+                            <p className="text-sm text-ink-900">{msg.templateName}</p>
+                            <p className="text-xs text-ink-500">{msg.ruleName}</p>
                           </div>
                         </td>
-                        <td className="p-3 text-sm text-brand-mid-gray">
+                        <td className="p-3 text-sm text-ink-500">
                           {new Date(msg.scheduledFor).toLocaleString()}
                         </td>
                         <td className="p-3">
@@ -622,25 +622,25 @@ export default function ScheduledMessagesPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-brand-dark">
+                <h2 className="text-lg font-semibold text-ink-900">
                   {editingSchedule ? 'Edit Schedule' : 'New Scheduled Message'}
                 </h2>
                 <button onClick={() => setShowScheduleModal(false)}>
-                  <X className="w-5 h-5 text-brand-mid-gray" />
+                  <X className="w-5 h-5 text-ink-500" />
                 </button>
               </div>
               
               <div className="space-y-4">
                 {/* Template Section */}
                 <div className="pb-4 border-b border-gray-100">
-                  <h3 className="text-sm font-medium text-brand-mid-gray mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-ink-500 mb-3 flex items-center gap-2">
                     <MessageSquare className="w-4 h-4" />
                     Message Template
                   </h3>
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-brand-dark mb-1">
+                      <label className="block text-sm font-medium text-ink-900 mb-1">
                         Property *
                       </label>
                       <select
@@ -657,7 +657,7 @@ export default function ScheduledMessagesPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-brand-dark mb-1">
+                      <label className="block text-sm font-medium text-ink-900 mb-1">
                         Template Name *
                       </label>
                       <input
@@ -670,7 +670,7 @@ export default function ScheduledMessagesPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-brand-dark mb-1">
+                      <label className="block text-sm font-medium text-ink-900 mb-1">
                         Twilio ContentSid *
                       </label>
                       <input
@@ -680,7 +680,7 @@ export default function ScheduledMessagesPage() {
                         placeholder="e.g., HXb0d05c2f5155d181350d93c41235da1d"
                         className="w-full p-2 border border-gray-200 rounded-lg font-mono text-sm"
                       />
-                      <p className="text-xs text-brand-mid-gray mt-1">
+                      <p className="text-xs text-ink-500 mt-1">
                         Get this from your Twilio Content Templates
                       </p>
                     </div>
@@ -689,14 +689,14 @@ export default function ScheduledMessagesPage() {
 
                 {/* Schedule Section */}
                 <div>
-                  <h3 className="text-sm font-medium text-brand-mid-gray mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-ink-500 mb-3 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     Schedule Trigger
                   </h3>
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-brand-dark mb-1">
+                      <label className="block text-sm font-medium text-ink-900 mb-1">
                         When to Send *
                       </label>
                       <select
@@ -724,7 +724,7 @@ export default function ScheduledMessagesPage() {
                       <>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-sm font-medium text-brand-dark mb-1">
+                            <label className="block text-sm font-medium text-ink-900 mb-1">
                               Days Offset
                             </label>
                             <input
@@ -736,7 +736,7 @@ export default function ScheduledMessagesPage() {
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium text-brand-dark mb-1">
+                            <label className="block text-sm font-medium text-ink-900 mb-1">
                               Time of Day
                             </label>
                             <input
@@ -756,14 +756,14 @@ export default function ScheduledMessagesPage() {
               <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => setShowScheduleModal(false)}
-                  className="px-4 py-2 text-brand-mid-gray hover:text-brand-dark"
+                  className="px-4 py-2 text-ink-500 hover:text-ink-900"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={editingSchedule ? handleUpdateSchedule : handleCreateSchedule}
                   disabled={!scheduleForm.propertyId || !scheduleForm.templateName || !scheduleForm.contentSid || saving}
-                  className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-600/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {saving && (
                     <motion.div

@@ -134,7 +134,7 @@ export default function TasksPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
       </div>
     )
   }
@@ -144,8 +144,8 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-brand-dark">Tasks</h1>
-          <p className="text-brand-mid-gray">Manage cleaning, maintenance, and property tasks</p>
+          <h1 className="text-2xl font-bold text-ink-900">Tasks</h1>
+          <p className="text-ink-500">Manage cleaning, maintenance, and property tasks</p>
         </div>
         <Button className="sm:w-auto" onClick={() => navigate('/tasks/new')}>
           <Plus className="mr-2 h-4 w-4" />
@@ -186,7 +186,7 @@ export default function TasksPage() {
                   "ml-2 text-xs pointer-events-none",
                   filter === filterOption.key 
                     ? "bg-white/20 text-white" 
-                    : "bg-brand-mid-gray/10 text-brand-mid-gray"
+                    : "bg-ink-500/10 text-ink-500"
                 )}
               >
                 {filterOption.count}
@@ -198,11 +198,11 @@ export default function TasksPage() {
         <div className="flex gap-4">
           {/* Property Filter */}
           <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-brand-mid-gray" />
+            <MapPin className="h-4 w-4 text-ink-500" />
             <select
               value={propertyFilter}
               onChange={(e) => setPropertyFilter(e.target.value)}
-              className="h-9 w-[200px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+              className="h-9 w-[200px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
             >
               <option value="all">All Properties</option>
               {properties.map((property) => (
@@ -215,7 +215,7 @@ export default function TasksPage() {
 
           {/* Search */}
           <div className="flex items-center gap-2 flex-1 max-w-md">
-            <Search className="h-4 w-4 text-brand-mid-gray" />
+            <Search className="h-4 w-4 text-ink-500" />
             <Input 
               placeholder="Search tasks..."
               value={searchTerm}
@@ -247,19 +247,19 @@ export default function TasksPage() {
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-brand-vanilla rounded-full flex items-center justify-center">
-                          <IconComponent className="h-4 w-4 text-brand-purple" />
+                        <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center">
+                          <IconComponent className="h-4 w-4 text-brand-600" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-brand-dark">{task.title}</h3>
+                          <h3 className="font-semibold text-ink-900">{task.title}</h3>
                           {task.subtitle && (
-                            <p className="text-xs text-brand-mid-gray">{task.subtitle}</p>
+                            <p className="text-xs text-ink-500">{task.subtitle}</p>
                           )}
-                          <p className="text-sm text-brand-mid-gray mt-1">{task.description}</p>
+                          <p className="text-sm text-ink-500 mt-1">{task.description}</p>
                         </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-4 text-sm text-brand-mid-gray">
+                      <div className="flex flex-wrap gap-4 text-sm text-ink-500">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
                           <span>{task.property}</span>
@@ -324,9 +324,9 @@ export default function TasksPage() {
 
       {filteredTasks.length === 0 && (
         <div className="text-center py-12">
-          <Clock className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-          <h3 className="text-lg font-medium text-brand-dark mb-2">No tasks found</h3>
-          <p className="text-brand-mid-gray">
+          <Clock className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+          <h3 className="text-lg font-medium text-ink-900 mb-2">No tasks found</h3>
+          <p className="text-ink-500">
             {searchTerm ? `No results for "${searchTerm}"` : 'Try adjusting your filters or create a new task.'}
           </p>
         </div>

@@ -175,7 +175,7 @@ export default function StaffPage() {
   if (loading && staff.length === 0 && properties.length === 0) {
     return (
       <div className="p-6 flex items-center justify-center h-64">
-        <div className="flex items-center gap-2 text-brand-mid-gray">
+        <div className="flex items-center gap-2 text-ink-500">
           <RefreshCw className="h-5 w-5 animate-spin" />
           <span>Loading staff...</span>
         </div>
@@ -193,8 +193,8 @@ export default function StaffPage() {
       >
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-brand-dark">Staff</h1>
-          <p className="text-brand-mid-gray">Manage staff members for your properties</p>
+          <h1 className="text-2xl font-bold text-ink-900">Staff</h1>
+          <p className="text-ink-500">Manage staff members for your properties</p>
         </div>
 
         {/* Property Selector and Actions */}
@@ -230,9 +230,9 @@ export default function StaffPage() {
         {staff.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <UserCog className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-              <h3 className="text-lg font-medium text-brand-dark mb-2">No Staff Members</h3>
-              <p className="text-brand-mid-gray">Add staff members to assign tasks and manage your property.</p>
+              <UserCog className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+              <h3 className="text-lg font-medium text-ink-900 mb-2">No Staff Members</h3>
+              <p className="text-ink-500">Add staff members to assign tasks and manage your property.</p>
             </CardContent>
           </Card>
         ) : (
@@ -306,7 +306,7 @@ export default function StaffPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <h4 className="font-semibold text-brand-dark">{member.name}</h4>
+                          <h4 className="font-semibold text-ink-900">{member.name}</h4>
                           <Badge className={`text-xs ${getRoleBadgeColor(member.role)}`}>
                             {member.role || 'Staff'}
                           </Badge>
@@ -316,7 +316,7 @@ export default function StaffPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-brand-mid-gray">
+                        <div className="flex items-center gap-2 mt-2 text-sm text-ink-500">
                           <Phone className="h-3 w-3" />
                           <span>{member.phone?.replace('whatsapp:', '')}</span>
                         </div>
@@ -353,7 +353,7 @@ export default function StaffPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-brand-dark">Add Staff Member</h2>
+                <h2 className="text-lg font-semibold text-ink-900">Add Staff Member</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowAddModal(false)} className="h-8 w-8 p-0">
                   <X className="h-4 w-4" />
                 </Button>
@@ -375,7 +375,7 @@ export default function StaffPage() {
                     onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
                     placeholder="whatsapp:+1234567890"
                   />
-                  <p className="text-xs text-brand-mid-gray mt-1">Include 'whatsapp:' prefix for WhatsApp numbers</p>
+                  <p className="text-xs text-ink-500 mt-1">Include 'whatsapp:' prefix for WhatsApp numbers</p>
                 </div>
                 <div>
                   <Label>Role</Label>

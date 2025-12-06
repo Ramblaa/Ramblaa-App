@@ -23,7 +23,7 @@ function ProtectedRoute({ children }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-purple to-brand-dark">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-600 to-ink-900">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}

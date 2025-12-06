@@ -182,7 +182,7 @@ export default function BookingsPage() {
   if (loading && bookings.length === 0 && properties.length === 0) {
     return (
       <div className="p-6 flex items-center justify-center h-64">
-        <div className="flex items-center gap-2 text-brand-mid-gray">
+        <div className="flex items-center gap-2 text-ink-500">
           <RefreshCw className="h-5 w-5 animate-spin" />
           <span>Loading bookings...</span>
         </div>
@@ -200,8 +200,8 @@ export default function BookingsPage() {
       >
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-brand-dark">Bookings</h1>
-          <p className="text-brand-mid-gray">Manage guest bookings for your properties</p>
+          <h1 className="text-2xl font-bold text-ink-900">Bookings</h1>
+          <p className="text-ink-500">Manage guest bookings for your properties</p>
         </div>
 
         {/* Property Selector and Actions */}
@@ -224,7 +224,7 @@ export default function BookingsPage() {
                 type="checkbox"
                 checked={showActiveOnly}
                 onChange={(e) => setShowActiveOnly(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
+                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-600"
               />
               Active only
             </label>
@@ -248,9 +248,9 @@ export default function BookingsPage() {
         {bookings.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Calendar className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-              <h3 className="text-lg font-medium text-brand-dark mb-2">No Bookings Found</h3>
-              <p className="text-brand-mid-gray">
+              <Calendar className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+              <h3 className="text-lg font-medium text-ink-900 mb-2">No Bookings Found</h3>
+              <p className="text-ink-500">
                 {showActiveOnly ? 'No active bookings. Try showing all bookings.' : 'Add bookings to track your guests.'}
               </p>
             </CardContent>
@@ -324,14 +324,14 @@ export default function BookingsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
-                            <User className="h-5 w-5 text-brand-mid-gray" />
-                            <h4 className="font-semibold text-brand-dark">{booking.guestName}</h4>
+                            <User className="h-5 w-5 text-ink-500" />
+                            <h4 className="font-semibold text-ink-900">{booking.guestName}</h4>
                             <Badge className={`text-xs ${status.color}`}>
                               {status.label}
                             </Badge>
                           </div>
                           
-                          <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-brand-mid-gray">
+                          <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-ink-500">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               <span>{formatDate(booking.startDate)} → {formatDate(booking.endDate)}</span>
@@ -383,7 +383,7 @@ export default function BookingsPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-brand-dark">Add Booking</h2>
+                <h2 className="text-lg font-semibold text-ink-900">Add Booking</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowAddModal(false)} className="h-8 w-8 p-0">
                   <X className="h-4 w-4" />
                 </Button>
@@ -405,7 +405,7 @@ export default function BookingsPage() {
                     onChange={(e) => setNewBooking({ ...newBooking, guestPhone: e.target.value })}
                     placeholder="whatsapp:+1234567890"
                   />
-                  <p className="text-xs text-brand-mid-gray mt-1">Include 'whatsapp:' prefix for WhatsApp numbers</p>
+                  <p className="text-xs text-ink-500 mt-1">Include 'whatsapp:' prefix for WhatsApp numbers</p>
                 </div>
                 <div>
                   <Label>Email</Label>

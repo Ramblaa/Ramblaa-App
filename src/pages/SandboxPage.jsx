@@ -396,21 +396,21 @@ export default function SandboxPage() {
     if (message.sender === 'guest') return null
     if (message.senderType === 'rambley') {
       return (
-        <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
+        <div className="flex items-center gap-1 text-xs text-ink-500">
           <Bot className="h-3 w-3" />
           <span>Ramble</span>
         </div>
       )
     } else if (message.senderType === 'staff') {
       return (
-        <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
+        <div className="flex items-center gap-1 text-xs text-ink-500">
           <Wrench className="h-3 w-3" />
           <span>Staff</span>
         </div>
       )
     } else {
       return (
-        <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
+        <div className="flex items-center gap-1 text-xs text-ink-500">
           <User className="h-3 w-3" />
           <span>Host</span>
         </div>
@@ -422,8 +422,8 @@ export default function SandboxPage() {
     if (!generatedTasks || generatedTasks.length === 0) return null
 
     return (
-      <div className="mt-2 pt-2 border-t border-brand-mid-gray/20">
-        <div className="flex items-center gap-1 text-xs text-brand-mid-gray mb-1">
+      <div className="mt-2 pt-2 border-t border-ink-300/20">
+        <div className="flex items-center gap-1 text-xs text-ink-500 mb-1">
           <CheckSquare className="h-3 w-3" />
           <span>Tasks created:</span>
         </div>
@@ -436,7 +436,7 @@ export default function SandboxPage() {
               <button
                 key={taskId}
                 onClick={() => setDemoMode('tasks')}
-                className="flex items-center gap-2 text-xs text-brand-purple hover:text-brand-purple/80 transition-colors group"
+                className="flex items-center gap-2 text-xs text-brand-600 hover:text-brand-600/80 transition-colors group"
               >
                 <div className={cn(
                   "w-2 h-2 rounded-full",
@@ -720,16 +720,16 @@ export default function SandboxPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Sandbox Header with Mode Tabs */}
-      <div className="flex-shrink-0 p-6 border-b bg-gradient-to-r from-brand-purple/5 to-brand-purple/10">
+      <div className="flex-shrink-0 p-6 border-b bg-gradient-to-r from-brand-600/5 to-brand-600/10">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-brand-purple/10">
-                <PlayCircle className="h-6 w-6 text-brand-purple" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-brand-600/10">
+                <PlayCircle className="h-6 w-6 text-brand-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-brand-dark">Sandbox Mode</h1>
-                <p className="text-brand-mid-gray">Test and explore Ramble features in a safe demo environment</p>
+                <h1 className="text-2xl font-bold text-ink-900">Sandbox Mode</h1>
+                <p className="text-ink-500">Test and explore Ramble features in a safe demo environment</p>
               </div>
             </div>
           </div>
@@ -809,7 +809,7 @@ export default function SandboxPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h1 className="text-lg font-bold text-brand-dark">{selectedTask?.title}</h1>
+                        <h1 className="text-lg font-bold text-ink-900">{selectedTask?.title}</h1>
                         <Badge className={cn(
                           "text-xs",
                           selectedTask?.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
@@ -820,9 +820,9 @@ export default function SandboxPage() {
                            selectedTask?.status?.charAt(0).toUpperCase() + selectedTask?.status?.slice(1)}
                         </Badge>
                       </div>
-                      <p className="text-sm text-brand-mid-gray mt-1">{selectedTask?.description}</p>
+                      <p className="text-sm text-ink-500 mt-1">{selectedTask?.description}</p>
                       
-                      <div className="flex flex-wrap gap-3 text-xs text-brand-mid-gray mt-2">
+                      <div className="flex flex-wrap gap-3 text-xs text-ink-500 mt-2">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           <span>{selectedTask?.property}</span>
@@ -843,7 +843,7 @@ export default function SandboxPage() {
                 {/* Conversations List */}
                 <div className="overflow-y-auto">
                   <div className="p-4">
-                    <h2 className="text-sm font-medium text-brand-dark mb-3">Task Communications</h2>
+                    <h2 className="text-sm font-medium text-ink-900 mb-3">Task Communications</h2>
                   </div>
                   
                   {selectedTask?.conversations?.map((conversation) => {
@@ -862,11 +862,11 @@ export default function SandboxPage() {
                     const getAvatarColor = (personType) => {
                       switch (personType) {
                         case 'guest':
-                          return 'bg-brand-vanilla text-brand-dark'
+                          return 'bg-brand-100 text-ink-900'
                         case 'staff':
-                          return 'bg-brand-dark text-brand-vanilla'
+                          return 'bg-ink-900 text-brand-200'
                         default:
-                          return 'bg-brand-dark text-brand-vanilla'
+                          return 'bg-ink-900 text-brand-200'
                       }
                     }
                     
@@ -876,7 +876,7 @@ export default function SandboxPage() {
                         whileHover={{ backgroundColor: 'rgba(154, 23, 80, 0.05)' }}
                         className={cn(
                           "p-4 border-b cursor-pointer transition-colors",
-                          selectedTaskConversation?.id === conversation.id ? "bg-brand-purple/10 border-brand-purple/20" : ""
+                          selectedTaskConversation?.id === conversation.id ? "bg-brand-600/10 border-brand-600/20" : ""
                         )}
                         onClick={() => setSelectedTaskConversation(conversation)}
                       >
@@ -889,16 +889,16 @@ export default function SandboxPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-medium text-brand-dark text-sm">{conversation.personName}</h3>
+                              <h3 className="font-medium text-ink-900 text-sm">{conversation.personName}</h3>
                               <Badge variant="secondary" className="text-xs">
                                 {conversation.personRole}
                               </Badge>
                             </div>
-                            <p className="text-sm text-brand-mid-gray truncate">
+                            <p className="text-sm text-ink-500 truncate">
                               {lastMessage.senderName}: {lastMessage.text}
                             </p>
                             <div className="flex items-center justify-between mt-1">
-                              <p className="text-xs text-brand-mid-gray">{conversation.lastActivity}</p>
+                              <p className="text-xs text-ink-500">{conversation.lastActivity}</p>
                               <Badge variant="outline" className="text-xs">
                                 {conversation.messages.length}
                               </Badge>
@@ -921,31 +921,31 @@ export default function SandboxPage() {
                     {/* Desktop Task Chat Header */}
                     <div className="hidden lg:flex items-center justify-between p-4 border-b bg-background">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-brand-vanilla text-brand-dark rounded-full flex items-center justify-center font-medium text-sm">
+                        <div className="w-10 h-10 bg-brand-100 text-ink-900 rounded-full flex items-center justify-center font-medium text-sm">
                           {selectedTaskConversation.personName.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div>
-                          <h2 className="font-semibold text-brand-dark">{selectedTaskConversation.personName}</h2>
-                          <p className="text-sm text-brand-mid-gray">{selectedTaskConversation.personRole}</p>
+                          <h2 className="font-semibold text-ink-900">{selectedTaskConversation.personName}</h2>
+                          <p className="text-sm text-ink-500">{selectedTaskConversation.personRole}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-brand-dark">Auto Response</span>
+                          <span className="text-sm font-medium text-ink-900">Auto Response</span>
                           <Switch
                             checked={getTaskAutoResponseState()}
                             onCheckedChange={toggleTaskAutoResponse}
                           />
                           <span className={cn(
                             "text-xs font-medium",
-                            getTaskAutoResponseState() ? "text-brand-purple" : "text-brand-mid-gray"
+                            getTaskAutoResponseState() ? "text-brand-600" : "text-ink-500"
                           )}>
                             {getTaskAutoResponseState() ? "ON" : "OFF"}
                           </span>
                           {getTaskAutoResponseState() ? (
-                            <Bot className="h-4 w-4 text-brand-purple" />
+                            <Bot className="h-4 w-4 text-brand-600" />
                           ) : (
-                            <BotOff className="h-4 w-4 text-brand-mid-gray" />
+                            <BotOff className="h-4 w-4 text-ink-500" />
                           )}
                         </div>
                       </div>
@@ -962,14 +962,14 @@ export default function SandboxPage() {
                         Back
                       </Button>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-brand-purple rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center">
                           <span className="text-xs font-medium text-white">
                             {selectedTaskConversation.personName.split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>
                         <div>
-                          <h2 className="font-medium text-brand-dark">{selectedTaskConversation.personName}</h2>
-                          <p className="text-xs text-brand-mid-gray">{selectedTaskConversation.personRole}</p>
+                          <h2 className="font-medium text-ink-900">{selectedTaskConversation.personName}</h2>
+                          <p className="text-xs text-ink-500">{selectedTaskConversation.personRole}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -979,14 +979,14 @@ export default function SandboxPage() {
                         />
                         <span className={cn(
                           "text-xs font-medium",
-                          getTaskAutoResponseState() ? "text-brand-purple" : "text-brand-mid-gray"
+                          getTaskAutoResponseState() ? "text-brand-600" : "text-ink-500"
                         )}>
                           {getTaskAutoResponseState() ? "ON" : "OFF"}
                         </span>
                         {getTaskAutoResponseState() ? (
-                          <Bot className="h-4 w-4 text-brand-purple" />
+                          <Bot className="h-4 w-4 text-brand-600" />
                         ) : (
-                          <BotOff className="h-4 w-4 text-brand-mid-gray" />
+                          <BotOff className="h-4 w-4 text-ink-500" />
                         )}
                       </div>
                     </div>
@@ -1028,7 +1028,7 @@ export default function SandboxPage() {
                                         ? "justify-start"
                                         : "justify-end"
                                     )}>
-                                      <div className="flex items-center gap-1 text-xs text-brand-mid-gray">
+                                      <div className="flex items-center gap-1 text-xs text-ink-500">
                                         {message.sender === 'rambley' ? (
                                           <>
                                             <Bot className="h-3 w-3" />
@@ -1051,19 +1051,19 @@ export default function SandboxPage() {
                                   <div className={cn(
                                     "px-4 py-2 rounded-lg",
                                     message.sender === 'guest'
-                                      ? "bg-brand-vanilla text-brand-dark"
+                                      ? "bg-brand-100 text-ink-900"
                                       : message.sender === 'rambley' || message.sender === 'host'
-                                        ? "bg-brand-purple text-white"
-                                        : "bg-brand-dark text-brand-vanilla"
+                                        ? "bg-brand-600 text-white"
+                                        : "bg-ink-900 text-brand-200"
                                   )}>
                                     <p className="text-sm">{message.text}</p>
                                     <p className={cn(
                                       "text-xs mt-1",
                                       message.sender === 'guest'
-                                        ? "text-brand-mid-gray"
+                                        ? "text-ink-500"
                                         : message.sender === 'rambley' || message.sender === 'host'
                                           ? "text-white/70"
-                                          : "text-brand-vanilla/70"
+                                          : "text-brand-200/70"
                                     )}>
                                       {message.timestamp}
                                     </p>
@@ -1079,8 +1079,8 @@ export default function SandboxPage() {
                     {/* Task Message Input */}
                     <div className="fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto p-4 border-t bg-background z-20 safe-area-inset-bottom">
                       {!getTaskAutoResponseState() && (
-                        <div className="mb-3 p-2 bg-brand-vanilla/50 rounded-lg border border-brand-vanilla">
-                          <div className="flex items-center gap-2 text-sm text-brand-dark">
+                        <div className="mb-3 p-2 bg-brand-100/50 rounded-lg border border-brand-200">
+                          <div className="flex items-center gap-2 text-sm text-ink-900">
                             <BotOff className="h-4 w-4" />
                             <span>Auto-response is disabled. You're in manual mode for this conversation.</span>
                           </div>
@@ -1102,9 +1102,9 @@ export default function SandboxPage() {
                 ) : (
                   <div className="flex-1 flex items-center justify-center bg-brand-light/50">
                     <div className="text-center">
-                      <MessageCircle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-                      <h3 className="text-lg font-medium text-brand-dark mb-2">Select a conversation</h3>
-                      <p className="text-brand-mid-gray">Choose a person to view your communication with them</p>
+                      <MessageCircle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+                      <h3 className="text-lg font-medium text-ink-900 mb-2">Select a conversation</h3>
+                      <p className="text-ink-500">Choose a person to view your communication with them</p>
                     </div>
                   </div>
                 )}
@@ -1125,12 +1125,12 @@ export default function SandboxPage() {
                 selectedConversation ? "hidden lg:block" : "block"
               )}>
                 <div className="p-6 border-b flex-shrink-0">
-                  <h1 className="text-2xl font-bold text-brand-dark">Messages</h1>
-                  <p className="text-brand-mid-gray">Guest conversations</p>
+                  <h1 className="text-2xl font-bold text-ink-900">Messages</h1>
+                  <p className="text-ink-500">Guest conversations</p>
 
                   {/* Search Input */}
                   <div className="mt-4 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-brand-mid-gray" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ink-500" />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -1155,40 +1155,40 @@ export default function SandboxPage() {
                         whileHover={{ backgroundColor: 'rgba(154, 23, 80, 0.05)' }}
                         className={cn(
                           "p-4 border-b cursor-pointer transition-colors",
-                          selectedConversation?.id === conversation.id ? "bg-brand-purple/10 border-brand-purple/20" : ""
+                          selectedConversation?.id === conversation.id ? "bg-brand-600/10 border-brand-600/20" : ""
                         )}
                         onClick={() => loadConversationMessages(conversation)}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-brand-vanilla text-brand-dark rounded-full flex items-center justify-center font-medium text-sm">
+                          <div className="w-10 h-10 bg-brand-100 text-ink-900 rounded-full flex items-center justify-center font-medium text-sm">
                             {getInitials(conversation.guestName)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-semibold text-brand-dark truncate">{conversation.guestName}</h3>
+                              <h3 className="font-semibold text-ink-900 truncate">{conversation.guestName}</h3>
                               {conversation.unread > 0 && (
                                 <Badge variant="default" className="ml-2">
                                   {conversation.unread}
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center gap-1 text-xs text-brand-mid-gray mb-1">
+                            <div className="flex items-center gap-1 text-xs text-ink-500 mb-1">
                               <Phone className="h-3 w-3" />
                               <span>{conversation.phone}</span>
                               <span>•</span>
                               <span>{conversation.property}</span>
                             </div>
-                            <p className="text-sm text-brand-mid-gray truncate">{conversation.lastMessage}</p>
-                            <p className="text-xs text-brand-mid-gray mt-1">{conversation.timestamp}</p>
+                            <p className="text-sm text-ink-500 truncate">{conversation.lastMessage}</p>
+                            <p className="text-xs text-ink-500 mt-1">{conversation.timestamp}</p>
                           </div>
                         </div>
                       </motion.div>
                     ))
                   ) : (
                     <div className="p-8 text-center">
-                      <MessageCircle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-                      <h3 className="text-lg font-medium text-brand-dark mb-2">No conversations found</h3>
-                      <p className="text-brand-mid-gray text-sm">
+                      <MessageCircle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+                      <h3 className="text-lg font-medium text-ink-900 mb-2">No conversations found</h3>
+                      <p className="text-ink-500 text-sm">
                         {searchQuery ? `No results for "${searchQuery}"` : 'No conversations available'}
                       </p>
                     </div>
@@ -1206,31 +1206,31 @@ export default function SandboxPage() {
                     {/* Desktop Chat Header */}
                     <div className="hidden lg:flex items-center justify-between p-4 border-b bg-background">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-brand-vanilla text-brand-dark rounded-full flex items-center justify-center font-medium text-sm">
+                        <div className="w-10 h-10 bg-brand-100 text-ink-900 rounded-full flex items-center justify-center font-medium text-sm">
                           {selectedConversation.guestName.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div>
-                          <h2 className="font-semibold text-brand-dark">{selectedConversation.guestName}</h2>
-                          <p className="text-sm text-brand-mid-gray">{selectedConversation.property}</p>
+                          <h2 className="font-semibold text-ink-900">{selectedConversation.guestName}</h2>
+                          <p className="text-sm text-ink-500">{selectedConversation.property}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-brand-dark">Auto Response</span>
+                          <span className="text-sm font-medium text-ink-900">Auto Response</span>
                           <Switch
                             checked={isAutoResponseEnabled}
                             onCheckedChange={toggleAutoResponse}
                           />
                           <span className={cn(
                             "text-xs font-medium",
-                            isAutoResponseEnabled ? "text-brand-purple" : "text-brand-mid-gray"
+                            isAutoResponseEnabled ? "text-brand-600" : "text-ink-500"
                           )}>
                             {isAutoResponseEnabled ? "ON" : "OFF"}
                           </span>
                           {isAutoResponseEnabled ? (
-                            <Bot className="h-4 w-4 text-brand-purple" />
+                            <Bot className="h-4 w-4 text-brand-600" />
                           ) : (
-                            <BotOff className="h-4 w-4 text-brand-mid-gray" />
+                            <BotOff className="h-4 w-4 text-ink-500" />
                           )}
                         </div>
                       </div>
@@ -1247,14 +1247,14 @@ export default function SandboxPage() {
                         Back
                       </Button>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-brand-purple rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center">
                           <span className="text-xs font-medium text-white">
                             {selectedConversation.guestName.split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>
                         <div>
-                          <h2 className="font-medium text-brand-dark">{selectedConversation.guestName}</h2>
-                          <p className="text-xs text-brand-mid-gray">{selectedConversation.property}</p>
+                          <h2 className="font-medium text-ink-900">{selectedConversation.guestName}</h2>
+                          <p className="text-xs text-ink-500">{selectedConversation.property}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1264,14 +1264,14 @@ export default function SandboxPage() {
                         />
                         <span className={cn(
                           "text-xs font-medium",
-                          isAutoResponseEnabled ? "text-brand-purple" : "text-brand-mid-gray"
+                          isAutoResponseEnabled ? "text-brand-600" : "text-ink-500"
                         )}>
                           {isAutoResponseEnabled ? "ON" : "OFF"}
                         </span>
                         {isAutoResponseEnabled ? (
-                          <Bot className="h-4 w-4 text-brand-purple" />
+                          <Bot className="h-4 w-4 text-brand-600" />
                         ) : (
-                          <BotOff className="h-4 w-4 text-brand-mid-gray" />
+                          <BotOff className="h-4 w-4 text-ink-500" />
                         )}
                       </div>
                     </div>
@@ -1306,15 +1306,15 @@ export default function SandboxPage() {
                                 <div className={cn(
                                   "px-4 py-2 rounded-lg",
                                   message.sender === 'host' 
-                                    ? "bg-brand-purple text-white"
-                                    : "bg-brand-vanilla text-brand-dark"
+                                    ? "bg-brand-600 text-white"
+                                    : "bg-brand-100 text-ink-900"
                                 )}>
                                   <p className="text-sm">{message.text}</p>
                                   <p className={cn(
                                     "text-xs mt-1",
                                     message.sender === 'host' 
                                       ? "text-white/70"
-                                      : "text-brand-mid-gray"
+                                      : "text-ink-500"
                                   )}>
                                     {message.timestamp}
                                   </p>
@@ -1333,8 +1333,8 @@ export default function SandboxPage() {
                     <div className="fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto p-4 border-t bg-background z-20 safe-area-inset-bottom">
                       {/* Persona Selector */}
                       {!selectedPersona && (
-                        <div className="mb-3 p-3 bg-brand-vanilla/50 rounded-lg border border-brand-vanilla">
-                          <div className="flex items-center gap-2 text-sm text-brand-dark mb-2">
+                        <div className="mb-3 p-3 bg-brand-100/50 rounded-lg border border-brand-200">
+                          <div className="flex items-center gap-2 text-sm text-ink-900 mb-2">
                             <Bot className="h-4 w-4" />
                             <span className="font-medium">Choose your persona:</span>
                           </div>
@@ -1389,7 +1389,7 @@ export default function SandboxPage() {
                                       setShowPersonaDropdown(false);
                                     }}
                                     className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                                      selectedPersona.type === persona.type ? 'bg-brand-purple/10 text-brand-purple' : 'text-gray-700'
+                                      selectedPersona.type === persona.type ? 'bg-brand-600/10 text-brand-600' : 'text-gray-700'
                                     }`}
                                   >
                                     <persona.icon className="h-4 w-4" />
@@ -1410,9 +1410,9 @@ export default function SandboxPage() {
                 ) : (
                   <div className="flex-1 flex items-center justify-center bg-brand-light/50">
                     <div className="text-center">
-                      <MessageCircle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-                      <h3 className="text-lg font-medium text-brand-dark mb-2">Select a conversation</h3>
-                      <p className="text-brand-mid-gray">Choose a guest conversation to start messaging</p>
+                      <MessageCircle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+                      <h3 className="text-lg font-medium text-ink-900 mb-2">Select a conversation</h3>
+                      <p className="text-ink-500">Choose a guest conversation to start messaging</p>
                     </div>
                   </div>
                 )}
@@ -1430,8 +1430,8 @@ export default function SandboxPage() {
               {/* Tasks Header - Identical to TasksPage */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-brand-dark">Tasks</h1>
-                  <p className="text-brand-mid-gray">Manage cleaning, maintenance, and property tasks</p>
+                  <h1 className="text-2xl font-bold text-ink-900">Tasks</h1>
+                  <p className="text-ink-500">Manage cleaning, maintenance, and property tasks</p>
                 </div>
                 <Button className="sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
@@ -1464,7 +1464,7 @@ export default function SandboxPage() {
                           "ml-2 text-xs pointer-events-none",
                           taskFilter === filterOption.key 
                             ? "bg-white/20 text-white" 
-                            : "bg-brand-mid-gray/10 text-brand-mid-gray"
+                            : "bg-ink-500/10 text-ink-500"
                         )}
                       >
                         {filterOption.count}
@@ -1476,11 +1476,11 @@ export default function SandboxPage() {
                 <div className="flex gap-4">
                   {/* Property Filter */}
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-brand-mid-gray" />
+                    <MapPin className="h-4 w-4 text-ink-500" />
                     <select
                       value={taskPropertyFilter}
                       onChange={(e) => setTaskPropertyFilter(e.target.value)}
-                      className="h-9 w-[200px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+                      className="h-9 w-[200px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
                     >
                       <option value="all">All Properties</option>
                       {taskProperties.map((property) => (
@@ -1493,7 +1493,7 @@ export default function SandboxPage() {
 
                   {/* Search */}
                   <div className="flex items-center gap-2 flex-1 max-w-md">
-                    <Search className="h-4 w-4 text-brand-mid-gray" />
+                    <Search className="h-4 w-4 text-ink-500" />
                     <Input 
                       placeholder="Search tasks..."
                       value={taskSearchTerm}
@@ -1525,16 +1525,16 @@ export default function SandboxPage() {
                           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                             <div className="flex-1 space-y-3">
                               <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 bg-brand-vanilla rounded-full flex items-center justify-center">
-                                  <TypeIcon className="h-4 w-4 text-brand-purple" />
+                                <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center">
+                                  <TypeIcon className="h-4 w-4 text-brand-600" />
                                 </div>
                                 <div className="flex-1">
-                                  <h3 className="font-semibold text-brand-dark">{task.title}</h3>
-                                  <p className="text-sm text-brand-mid-gray mt-1">{task.description}</p>
+                                  <h3 className="font-semibold text-ink-900">{task.title}</h3>
+                                  <p className="text-sm text-ink-500 mt-1">{task.description}</p>
                                 </div>
                               </div>
                               
-                              <div className="flex flex-wrap gap-4 text-sm text-brand-mid-gray">
+                              <div className="flex flex-wrap gap-4 text-sm text-ink-500">
                                 <div className="flex items-center gap-1">
                                   <MapPin className="h-4 w-4" />
                                   <span>{task.property}</span>
@@ -1595,9 +1595,9 @@ export default function SandboxPage() {
 
               {filteredTasks.length === 0 && (
                 <div className="text-center py-12">
-                  <Clock className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-                  <h3 className="text-lg font-medium text-brand-dark mb-2">No tasks found</h3>
-                  <p className="text-brand-mid-gray">
+                  <Clock className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+                  <h3 className="text-lg font-medium text-ink-900 mb-2">No tasks found</h3>
+                  <p className="text-ink-500">
                     {taskSearchTerm ? `No results for "${taskSearchTerm}"` : 'Try adjusting your filters or create a new task.'}
                   </p>
                 </div>

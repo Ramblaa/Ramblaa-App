@@ -113,7 +113,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-purple to-brand-dark p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-600 to-ink-900 p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -122,23 +122,23 @@ export default function LoginPage() {
       >
         <Card className="border-0 shadow-2xl">
           <CardHeader className="text-center pb-4">
-            <div className="mx-auto mb-4 w-20 h-20 bg-brand-purple rounded-full flex items-center justify-center">
+            <div className="mx-auto mb-4 w-20 h-20 bg-brand-600 rounded-full flex items-center justify-center">
               <span className="text-2xl font-bold text-white">R</span>
             </div>
-            <CardTitle className="text-2xl text-brand-dark">Welcome to Ramble</CardTitle>
-            <CardDescription className="text-brand-mid-gray">
+            <CardTitle className="text-2xl text-ink-900">Welcome to Ramble</CardTitle>
+            <CardDescription className="text-ink-500">
               {mode === 'login' ? 'Sign in to access your dashboard' : 'Create your account to get started'}
             </CardDescription>
             
             {/* Mode Toggle */}
-            <div className="flex bg-gray-100 rounded-lg p-1 mt-4">
+            <div className="flex bg-ink-100 rounded-lg p-1 mt-4">
               <button
                 type="button"
                 onClick={() => handleModeSwitch('login')}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                   mode === 'login'
-                    ? 'bg-white text-brand-purple shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-brand-600 shadow-sm'
+                    : 'text-ink-600 hover:text-ink-900'
                 }`}
               >
                 Sign In
@@ -148,8 +148,8 @@ export default function LoginPage() {
                 onClick={() => handleModeSwitch('signup')}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                   mode === 'signup'
-                    ? 'bg-white text-brand-purple shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-brand-600 shadow-sm'
+                    : 'text-ink-600 hover:text-ink-900'
                 }`}
               >
                 Sign Up

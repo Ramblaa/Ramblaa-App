@@ -49,7 +49,7 @@ export default function Layout({ children }) {
       <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
         <div className={`fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity ease-linear duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setSidebarOpen(false)} />
         
-        <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-brand-dark transform ease-in-out duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-ink-900 transform ease-in-out duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           {sidebarOpen && (
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <button
@@ -63,8 +63,8 @@ export default function Layout({ children }) {
           )}
           
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex h-16 items-center px-6 border-b border-brand-mid-gray/20">
-              <h1 className="text-xl font-bold text-white">Ramble</h1>
+            <div className="flex h-16 items-center px-6 border-b border-ink-700">
+              <h1 className="text-xl font-semibold text-white tracking-tight">Ramble</h1>
             </div>
             <nav className="mt-5 px-2 space-y-1">
               {navigation.map((item) => {
@@ -74,10 +74,10 @@ export default function Layout({ children }) {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-brand-purple text-white'
-                        : 'text-brand-light-gray hover:bg-brand-mid-gray/20 hover:text-white'
+                        ? 'bg-brand-600 text-white'
+                        : 'text-ink-300 hover:bg-ink-800 hover:text-white'
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -90,10 +90,10 @@ export default function Layout({ children }) {
           </div>
           
           {/* User info and logout */}
-          <div className="flex-shrink-0 flex border-t border-brand-mid-gray/20 p-4">
+          <div className="flex-shrink-0 flex border-t border-ink-700 p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="h-8 w-8 rounded-full bg-brand-purple flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full bg-brand-600 flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
               </div>
@@ -101,11 +101,11 @@ export default function Layout({ children }) {
                 <p className="text-sm font-medium text-white">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-brand-light-gray">
+                <p className="text-xs text-ink-400">
                   {user?.email}
                 </p>
                 {isAdmin() && (
-                  <p className="text-xs text-brand-vanilla font-medium">
+                  <p className="text-xs text-brand-300 font-medium">
                     Admin
                   </p>
                 )}
@@ -114,7 +114,7 @@ export default function Layout({ children }) {
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="ml-auto text-brand-light-gray hover:text-white hover:bg-brand-mid-gray/20"
+                className="ml-auto text-ink-400 hover:text-white hover:bg-ink-800"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -126,10 +126,10 @@ export default function Layout({ children }) {
       {/* Static sidebar for desktop */}
       <div className="hidden md:flex md:flex-shrink-0">
         <div className="flex flex-col w-64">
-          <div className="flex flex-col h-0 flex-1 bg-brand-dark">
+          <div className="flex flex-col h-0 flex-1 bg-ink-900">
             {/* Logo */}
-            <div className="flex h-16 items-center px-6 border-b border-brand-mid-gray/20">
-              <h1 className="text-xl font-bold text-white">Ramble</h1>
+            <div className="flex h-16 items-center px-6 border-b border-ink-700">
+              <h1 className="text-xl font-semibold text-white tracking-tight">Ramble</h1>
             </div>
             
             {/* Navigation */}
@@ -142,10 +142,10 @@ export default function Layout({ children }) {
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                      className={`group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
                         isActive
-                          ? 'bg-brand-purple text-white'
-                          : 'text-brand-light-gray hover:bg-brand-mid-gray/20 hover:text-white'
+                          ? 'bg-brand-600 text-white'
+                          : 'text-ink-300 hover:bg-ink-800 hover:text-white'
                       }`}
                     >
                       <Icon className="mr-3 h-5 w-5" />
@@ -156,10 +156,10 @@ export default function Layout({ children }) {
               </nav>
               
               {/* User info and logout */}
-              <div className="flex-shrink-0 flex border-t border-brand-mid-gray/20 p-4">
+              <div className="flex-shrink-0 flex border-t border-ink-700 p-4">
                 <div className="flex items-center w-full">
                   <div className="flex-shrink-0">
-                    <div className="h-8 w-8 rounded-full bg-brand-purple flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-full bg-brand-600 flex items-center justify-center">
                       <User className="h-4 w-4 text-white" />
                     </div>
                   </div>
@@ -167,11 +167,11 @@ export default function Layout({ children }) {
                     <p className="text-sm font-medium text-white">
                       {user?.firstName} {user?.lastName}
                     </p>
-                    <p className="text-xs text-brand-light-gray">
+                    <p className="text-xs text-ink-400">
                       {user?.email}
                     </p>
                     {isAdmin() && (
-                      <p className="text-xs text-brand-vanilla font-medium">
+                      <p className="text-xs text-brand-300 font-medium">
                         Admin
                       </p>
                     )}
@@ -180,7 +180,7 @@ export default function Layout({ children }) {
                     variant="ghost"
                     size="sm"
                     onClick={handleLogout}
-                    className="text-brand-light-gray hover:text-white hover:bg-brand-mid-gray/20"
+                    className="text-ink-400 hover:text-white hover:bg-ink-800"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
@@ -198,7 +198,7 @@ export default function Layout({ children }) {
           <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
             <button
               type="button"
-              className="px-4 border-r border-gray-200 text-gray-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-purple md:hidden"
+              className="px-4 border-r border-ink-200 text-ink-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 md:hidden"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-6 w-6" />
@@ -206,7 +206,7 @@ export default function Layout({ children }) {
             <div className="flex-1 px-4 flex justify-between">
               <div className="flex-1 flex">
                 <div className="w-full flex md:ml-0">
-                  <div className="flex items-center text-lg font-semibold text-brand-dark">
+                  <div className="flex items-center text-xl font-semibold text-black tracking-tight">
                     Ramble
                   </div>
                 </div>

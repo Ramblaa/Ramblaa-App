@@ -278,7 +278,7 @@ export default function ContactsPage() {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="flex items-center gap-2 text-brand-mid-gray">
+          <div className="flex items-center gap-2 text-ink-500">
             <RefreshCw className="h-5 w-5 animate-spin" />
             <span>Loading contacts...</span>
           </div>
@@ -294,7 +294,7 @@ export default function ContactsPage() {
         <div className="flex flex-col items-center justify-center h-64 space-y-4">
           <div className="text-red-500 text-center">
             <p className="font-medium">Failed to load contacts</p>
-            <p className="text-sm text-brand-mid-gray">{error}</p>
+            <p className="text-sm text-ink-500">{error}</p>
           </div>
           <Button onClick={loadData} variant="outline">
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -315,7 +315,7 @@ export default function ContactsPage() {
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-brand-dark">Contacts</h3>
+            <h3 className="text-lg font-semibold text-ink-900">Contacts</h3>
             <RefreshButton />
           </div>
           <Button onClick={() => setShowAddModal(true)} disabled={loading}>
@@ -381,7 +381,7 @@ export default function ContactsPage() {
                           id={`contact-language-${contact.id}`}
                           value={editForm.preferred_language || 'en'}
                           onChange={(e) => updateEditForm('preferred_language', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-600"
                         >
                           <option value="en">English</option>
                           <option value="es">Spanish</option>
@@ -404,7 +404,7 @@ export default function ContactsPage() {
                     
                     {/* Service Locations */}
                     <div className="border-t pt-4">
-                      <Label className="text-sm font-medium text-brand-dark mb-3 block">
+                      <Label className="text-sm font-medium text-ink-900 mb-3 block">
                         Service Locations
                       </Label>
                       <div className="space-y-2">
@@ -414,9 +414,9 @@ export default function ContactsPage() {
                               type="checkbox"
                               checked={editForm.serviceLocations?.includes(property.id) || false}
                               onChange={() => toggleServiceLocation(property.id, false)}
-                              className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded"
+                              className="h-4 w-4 text-brand-600 focus:ring-brand-600 border-gray-300 rounded"
                             />
-                            <span className="text-sm text-brand-dark">{property.name}</span>
+                            <span className="text-sm text-ink-900">{property.name}</span>
                           </label>
                         ))}
                       </div>
@@ -442,7 +442,7 @@ export default function ContactsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-brand-dark">{contact.name}</h4>
+                        <h4 className="font-semibold text-ink-900">{contact.name}</h4>
                         <Badge variant="secondary" className="text-xs">
                           {contact.service_type || contact.type}
                         </Badge>
@@ -452,16 +452,16 @@ export default function ContactsPage() {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex gap-4 mt-2 text-xs text-brand-mid-gray">
+                      <div className="flex gap-4 mt-2 text-xs text-ink-500">
                         <span>{contact.phone}</span>
                       </div>
                       {getServiceLocations(contact).length > 0 && (
                         <div className="flex items-center gap-2 mt-3">
-                          <MapPin className="h-3 w-3 text-brand-mid-gray" />
-                          <span className="text-xs text-brand-mid-gray">Services:</span>
+                          <MapPin className="h-3 w-3 text-ink-500" />
+                          <span className="text-xs text-ink-500">Services:</span>
                           <div className="flex gap-1 flex-wrap">
                             {getServiceLocations(contact).map((location, index) => (
-                              <Badge key={location.id || index} variant="outline" className="text-xs bg-brand-vanilla/50 text-brand-dark border-brand-purple/20">
+                              <Badge key={location.id || index} variant="outline" className="text-xs bg-brand-100/50 text-ink-900 border-brand-600/20">
                                 {location.name}
                               </Badge>
                             ))}

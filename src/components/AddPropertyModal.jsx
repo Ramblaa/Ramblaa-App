@@ -14,7 +14,7 @@ const AddPropertyModal = React.memo(({
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-brand-dark">Add New Property</h2>
+        <h2 className="text-xl font-semibold text-ink-900">Add New Property</h2>
         <Button 
           variant="ghost" 
           size="icon"
@@ -50,7 +50,7 @@ const AddPropertyModal = React.memo(({
                   id="property-type"
                   value={newProperty.type}
                   onChange={(e) => handleInputChange('type', e.target.value)}
-                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
                 >
                   <option value="">Select Type</option>
                   <option value="villa">Villa</option>

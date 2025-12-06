@@ -64,7 +64,7 @@ export default function EmailVerificationPage() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-brand-purple border-t-transparent rounded-full"
+            className="w-16 h-16 border-4 border-brand-600 border-t-transparent rounded-full"
           />
         )
       case 'success':
@@ -95,12 +95,12 @@ export default function EmailVerificationPage() {
       case 'error':
         return 'text-red-600'
       default:
-        return 'text-brand-purple'
+        return 'text-brand-600'
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-purple to-brand-dark p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-600 to-ink-900 p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -109,15 +109,15 @@ export default function EmailVerificationPage() {
       >
         <Card className="border-0 shadow-2xl">
           <CardHeader className="text-center pb-4">
-            <div className="mx-auto mb-4 w-20 h-20 bg-brand-purple rounded-full flex items-center justify-center">
+            <div className="mx-auto mb-4 w-20 h-20 bg-brand-600 rounded-full flex items-center justify-center">
               <span className="text-2xl font-bold text-white">R</span>
             </div>
-            <CardTitle className="text-2xl text-brand-dark">
+            <CardTitle className="text-2xl text-ink-900">
               {status === 'verifying' && 'Verifying Email...'}
               {status === 'success' && 'Email Verified!'}
               {status === 'error' && 'Verification Failed'}
             </CardTitle>
-            <CardDescription className="text-brand-mid-gray">
+            <CardDescription className="text-ink-500">
               {status === 'verifying' && 'Please wait while we verify your email address'}
               {status === 'success' && 'Your account is now active and ready to use'}
               {status === 'error' && 'There was an issue verifying your email'}
@@ -166,7 +166,7 @@ export default function EmailVerificationPage() {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                   />
                 </div>
                 

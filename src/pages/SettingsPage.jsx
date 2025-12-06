@@ -110,21 +110,21 @@ export default function SettingsPage() {
             <div>
               <Label htmlFor="contact-email">Contact Email</Label>
               <div className="flex">
-                <Mail className="w-4 h-4 mt-3 mr-2 text-brand-mid-gray" />
+                <Mail className="w-4 h-4 mt-3 mr-2 text-ink-500" />
                 <Input id="contact-email" defaultValue="admin@sunsetproperties.com" />
               </div>
             </div>
             <div>
               <Label htmlFor="contact-phone">Contact Phone</Label>
               <div className="flex">
-                <Phone className="w-4 h-4 mt-3 mr-2 text-brand-mid-gray" />
+                <Phone className="w-4 h-4 mt-3 mr-2 text-ink-500" />
                 <Input id="contact-phone" defaultValue="+1 (555) 123-4567" />
               </div>
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="business-address">Business Address</Label>
               <div className="flex">
-                <MapPin className="w-4 h-4 mt-3 mr-2 text-brand-mid-gray" />
+                <MapPin className="w-4 h-4 mt-3 mr-2 text-ink-500" />
                 <Input id="business-address" defaultValue="123 Ocean Drive, Miami Beach, FL 33139" />
               </div>
             </div>
@@ -170,11 +170,11 @@ export default function SettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-brand-purple" />
+              <MessageSquare className="h-5 w-5 text-brand-600" />
               <CardTitle className="text-lg">Guest Messages</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-brand-mid-gray">Toggle All</Label>
+              <Label className="text-sm text-ink-500">Toggle All</Label>
               <Switch defaultChecked />
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">New guest message received</Label>
-              <p className="text-sm text-brand-mid-gray">When a guest sends a new message</p>
+              <p className="text-sm text-ink-500">When a guest sends a new message</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Guest requests manager contact</Label>
-              <p className="text-sm text-brand-mid-gray">When a guest specifically asks to speak with a manager</p>
+              <p className="text-sm text-ink-500">When a guest specifically asks to speak with a manager</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -217,7 +217,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Guest complaint or negative feedback</Label>
-              <p className="text-sm text-brand-mid-gray">When sentiment analysis detects guest dissatisfaction</p>
+              <p className="text-sm text-ink-500">When sentiment analysis detects guest dissatisfaction</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -234,7 +234,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Emergency or urgent requests</Label>
-              <p className="text-sm text-brand-mid-gray">When guests report emergencies or urgent issues</p>
+              <p className="text-sm text-ink-500">When guests report emergencies or urgent issues</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -254,11 +254,11 @@ export default function SettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-brand-purple" />
+              <AlertTriangle className="h-5 w-5 text-brand-600" />
               <CardTitle className="text-lg">Escalations</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-brand-mid-gray">Toggle All</Label>
+              <Label className="text-sm text-ink-500">Toggle All</Label>
               <Switch defaultChecked />
             </div>
           </div>
@@ -267,7 +267,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Escalation triggered</Label>
-              <p className="text-sm text-brand-mid-gray">When an escalation rule is activated</p>
+              <p className="text-sm text-ink-500">When an escalation rule is activated</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -284,7 +284,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">High-priority escalation</Label>
-              <p className="text-sm text-brand-mid-gray">When a critical or high-priority escalation occurs</p>
+              <p className="text-sm text-ink-500">When a critical or high-priority escalation occurs</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Escalation resolved</Label>
-              <p className="text-sm text-brand-mid-gray">When an escalated issue is marked as resolved</p>
+              <p className="text-sm text-ink-500">When an escalated issue is marked as resolved</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -318,7 +318,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Staff response timeout</Label>
-              <p className="text-sm text-brand-mid-gray">When staff don't respond within the set time limit</p>
+              <p className="text-sm text-ink-500">When staff don't respond within the set time limit</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -338,11 +338,11 @@ export default function SettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckSquare className="h-5 w-5 text-brand-purple" />
+              <CheckSquare className="h-5 w-5 text-brand-600" />
               <CardTitle className="text-lg">Tasks</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-brand-mid-gray">Toggle All</Label>
+              <Label className="text-sm text-ink-500">Toggle All</Label>
               <Switch />
             </div>
           </div>
@@ -351,7 +351,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">New task created</Label>
-              <p className="text-sm text-brand-mid-gray">When a new task is assigned to staff</p>
+              <p className="text-sm text-ink-500">When a new task is assigned to staff</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Task completed</Label>
-              <p className="text-sm text-brand-mid-gray">When staff mark a task as completed</p>
+              <p className="text-sm text-ink-500">When staff mark a task as completed</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -385,7 +385,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Task overdue</Label>
-              <p className="text-sm text-brand-mid-gray">When a task passes its deadline without completion</p>
+              <p className="text-sm text-ink-500">When a task passes its deadline without completion</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Task messages and updates</Label>
-              <p className="text-sm text-brand-mid-gray">When staff add comments or updates to tasks</p>
+              <p className="text-sm text-ink-500">When staff add comments or updates to tasks</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -419,7 +419,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="font-medium">Task deadline reminders</Label>
-              <p className="text-sm text-brand-mid-gray">Reminders sent before task deadlines</p>
+              <p className="text-sm text-ink-500">Reminders sent before task deadlines</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -484,12 +484,12 @@ export default function SettingsPage() {
             <div key={rule.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-3 sm:gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                  <h4 className="font-medium text-brand-dark">{rule.name}</h4>
+                  <h4 className="font-medium text-ink-900">{rule.name}</h4>
                   <Badge variant="outline" className="text-xs w-fit">
                     {rule.type}
                   </Badge>
                 </div>
-                <p className="text-sm text-brand-mid-gray">{rule.description}</p>
+                <p className="text-sm text-ink-500">{rule.description}</p>
               </div>
               <div className="flex items-center justify-between sm:justify-start gap-3 flex-shrink-0">
                 <Switch checked={rule.enabled} />
@@ -522,7 +522,7 @@ export default function SettingsPage() {
             <div key={rule.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-medium text-brand-dark">{rule.name}</h4>
+                  <h4 className="font-medium text-ink-900">{rule.name}</h4>
                   <Badge 
                     variant="outline" 
                     className={`text-xs ${
@@ -534,7 +534,7 @@ export default function SettingsPage() {
                     {rule.priority} priority
                   </Badge>
                 </div>
-                <p className="text-sm text-brand-mid-gray">{rule.description}</p>
+                <p className="text-sm text-ink-500">{rule.description}</p>
               </div>
               <div className="flex items-center gap-3">
                 <Switch checked={rule.enabled} />
@@ -601,8 +601,8 @@ export default function SettingsPage() {
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-dark">Settings</h1>
-        <p className="text-sm sm:text-base text-brand-mid-gray">Manage your account, preferences, and business rules</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-ink-900">Settings</h1>
+        <p className="text-sm sm:text-base text-ink-500">Manage your account, preferences, and business rules</p>
       </div>
 
       {/* Tabs */}
@@ -616,8 +616,8 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
-                    ? 'border-brand-purple text-brand-purple'
-                    : 'border-transparent text-brand-mid-gray hover:text-brand-dark hover:border-brand-mid-gray'
+                    ? 'border-brand-600 text-brand-600'
+                    : 'border-transparent text-ink-500 hover:text-ink-900 hover:border-ink-300'
                 }`}
               >
                 <Icon className="h-4 w-4" />

@@ -180,8 +180,8 @@ export default function EscalationsPage() {
         {/* Header */}
         <div className="flex justify-between items-start sm:items-center">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-brand-dark">Escalations</h1>
-            <p className="text-sm sm:text-base text-brand-mid-gray">Monitor and manage escalated issues requiring your attention</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-ink-900">Escalations</h1>
+            <p className="text-sm sm:text-base text-ink-500">Monitor and manage escalated issues requiring your attention</p>
           </div>
         </div>
 
@@ -211,7 +211,7 @@ export default function EscalationsPage() {
                     "ml-1 sm:ml-2 text-xs pointer-events-none",
                     selectedFilter === filterOption.key 
                       ? "bg-white/20 text-white" 
-                      : "bg-brand-mid-gray/10 text-brand-mid-gray"
+                      : "bg-ink-500/10 text-ink-500"
                   )}
                 >
                   {filterOption.count}
@@ -223,11 +223,11 @@ export default function EscalationsPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Property Filter */}
             <div className="flex items-center gap-2 min-w-0">
-              <MapPin className="h-4 w-4 text-brand-mid-gray flex-shrink-0" />
+              <MapPin className="h-4 w-4 text-ink-500 flex-shrink-0" />
               <select
                 value={propertyFilter}
                 onChange={(e) => setPropertyFilter(e.target.value)}
-                className="h-9 flex-1 sm:w-[200px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+                className="h-9 flex-1 sm:w-[200px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
               >
                 <option value="all">All Properties</option>
                 {properties.map((property) => (
@@ -240,7 +240,7 @@ export default function EscalationsPage() {
 
             {/* Search */}
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Search className="h-4 w-4 text-brand-mid-gray flex-shrink-0" />
+              <Search className="h-4 w-4 text-ink-500 flex-shrink-0" />
               <Input 
                 placeholder="Search escalations..."
                 value={searchTerm}
@@ -256,9 +256,9 @@ export default function EscalationsPage() {
           {filteredEscalations.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <AlertTriangle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-                <h3 className="text-lg font-medium text-brand-dark mb-2">No escalations found</h3>
-                <p className="text-brand-mid-gray">
+                <AlertTriangle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+                <h3 className="text-lg font-medium text-ink-900 mb-2">No escalations found</h3>
+                <p className="text-ink-500">
                   {searchTerm ? `No results for "${searchTerm}"` : 'No escalations match your current filters.'}
                 </p>
               </CardContent>
@@ -275,7 +275,7 @@ export default function EscalationsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
-                          <h3 className="text-base sm:text-lg font-semibold text-brand-dark pr-2">{escalation.title}</h3>
+                          <h3 className="text-base sm:text-lg font-semibold text-ink-900 pr-2">{escalation.title}</h3>
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge className={`text-xs ${priorityInfo.badge}`}>
                               {escalation.priority.toUpperCase()}
@@ -287,36 +287,36 @@ export default function EscalationsPage() {
                           </div>
                         </div>
                         
-                        <p className="text-brand-mid-gray mb-4 text-sm sm:text-base">{escalation.description}</p>
+                        <p className="text-ink-500 mb-4 text-sm sm:text-base">{escalation.description}</p>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-sm">
                           <div>
-                            <Label className="text-xs text-brand-mid-gray">Property</Label>
+                            <Label className="text-xs text-ink-500">Property</Label>
                             <p className="font-medium truncate">{escalation.property}</p>
                           </div>
                           {escalation.guest && (
                             <div>
-                              <Label className="text-xs text-brand-mid-gray">Guest</Label>
+                              <Label className="text-xs text-ink-500">Guest</Label>
                               <p className="font-medium truncate">{escalation.guest}</p>
                             </div>
                           )}
                           <div>
-                            <Label className="text-xs text-brand-mid-gray">Assigned To</Label>
+                            <Label className="text-xs text-ink-500">Assigned To</Label>
                             <p className="font-medium truncate">{escalation.assignedTo}</p>
                           </div>
                           <div>
-                            <Label className="text-xs text-brand-mid-gray">Created</Label>
+                            <Label className="text-xs text-ink-500">Created</Label>
                             <p className="font-medium text-xs sm:text-sm">{escalation.createdAt}</p>
                           </div>
                           {escalation.estimatedResolution && (
                             <div>
-                              <Label className="text-xs text-brand-mid-gray">Est. Resolution</Label>
+                              <Label className="text-xs text-ink-500">Est. Resolution</Label>
                               <p className="font-medium">{escalation.estimatedResolution}</p>
                             </div>
                           )}
                           {escalation.estimatedCost && (
                             <div>
-                              <Label className="text-xs text-brand-mid-gray">Estimated Cost</Label>
+                              <Label className="text-xs text-ink-500">Estimated Cost</Label>
                               <p className="font-medium text-orange-600">{escalation.estimatedCost}</p>
                             </div>
                           )}
@@ -324,7 +324,7 @@ export default function EscalationsPage() {
                         
                         {escalation.resolvedAt && (
                           <div className="mt-3 text-sm">
-                            <Label className="text-xs text-brand-mid-gray">Resolved</Label>
+                            <Label className="text-xs text-ink-500">Resolved</Label>
                             <p className="font-medium text-green-600 text-xs sm:text-sm">{escalation.resolvedAt}</p>
                           </div>
                         )}

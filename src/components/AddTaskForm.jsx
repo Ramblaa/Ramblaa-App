@@ -16,7 +16,7 @@ const AddTaskForm = React.memo(({
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
-        <Plus className="h-5 w-5 text-brand-purple" />
+        <Plus className="h-5 w-5 text-brand-600" />
         Add New Task
       </CardTitle>
     </CardHeader>
@@ -28,7 +28,7 @@ const AddTaskForm = React.memo(({
             id="task-category"
             value={newTask.category}
             onChange={(e) => setNewTask(prev => ({ ...prev, category: e.target.value }))}
-            className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+            className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
           >
             <option value="">Select category</option>
             {Object.keys(initialTaskCategories).map((category) => (
@@ -53,7 +53,7 @@ const AddTaskForm = React.memo(({
             id="task-contact"
             value={newTask.contactId}
             onChange={(e) => setNewTask(prev => ({ ...prev, contactId: e.target.value }))}
-            className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+            className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
           >
             <option value="">No specific contact</option>
             {contacts.map((contact) => (
@@ -69,7 +69,7 @@ const AddTaskForm = React.memo(({
             id="task-location"
             value={newTask.locationId}
             onChange={(e) => setNewTask(prev => ({ ...prev, locationId: e.target.value }))}
-            className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+            className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
           >
             <option value="">No specific location</option>
             {properties.map((property) => (
@@ -93,7 +93,7 @@ const AddTaskForm = React.memo(({
           value={newTask.requirements}
           onChange={(e) => setNewTask(prev => ({ ...prev, requirements: e.target.value }))}
           placeholder="Describe what needs to be done, any special requirements, and detailed instructions..."
-          className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 mt-2"
+          className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 mt-2"
         />
       </div>
     </CardContent>

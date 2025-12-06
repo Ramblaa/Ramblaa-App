@@ -17,7 +17,7 @@ const AddContactModal = React.memo(({
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-brand-dark">Add New Contact</h2>
+        <h2 className="text-xl font-semibold text-ink-900">Add New Contact</h2>
         <Button 
           variant="ghost" 
           size="icon"
@@ -67,7 +67,7 @@ const AddContactModal = React.memo(({
                 id="new-contact-language"
                 value={newContact.preferred_language}
                 onChange={(e) => handleNewContactChange('preferred_language', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-600"
               >
                 <option value="en">English</option>
                 <option value="es">Spanish</option>
@@ -97,7 +97,7 @@ const AddContactModal = React.memo(({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Label className="text-sm text-brand-mid-gray mb-3 block">
+            <Label className="text-sm text-ink-500 mb-3 block">
               Select which properties this contact can service:
             </Label>
             <div className="space-y-2">
@@ -107,9 +107,9 @@ const AddContactModal = React.memo(({
                     type="checkbox"
                     checked={newContact.serviceLocations.includes(property.id)}
                     onChange={() => toggleServiceLocation(property.id, true)}
-                    className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded"
+                    className="h-4 w-4 text-brand-600 focus:ring-brand-600 border-gray-300 rounded"
                   />
-                  <span className="text-sm text-brand-dark">{property.name}</span>
+                  <span className="text-sm text-ink-900">{property.name}</span>
                 </label>
               ))}
             </div>

@@ -56,11 +56,11 @@ const Notification = ({
       case 'info':
       default:
         return {
-          bg: 'bg-brand-vanilla border-brand-purple/20',
+          bg: 'bg-brand-100 border-brand-600/20',
           icon: Info,
-          iconColor: 'text-brand-purple',
-          titleColor: 'text-brand-dark',
-          messageColor: 'text-brand-mid-gray'
+          iconColor: 'text-brand-600',
+          titleColor: 'text-ink-900',
+          messageColor: 'text-ink-500'
         }
     }
   }
@@ -104,7 +104,7 @@ const Notification = ({
         <div className="mt-4 flex justify-end">
           <Button 
             size="sm"
-            className="bg-brand-purple hover:bg-brand-purple/90 text-white"
+            className="bg-brand-600 hover:bg-brand-600/90 text-white"
             onClick={onClose}
           >
             OK

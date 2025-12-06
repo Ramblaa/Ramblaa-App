@@ -195,8 +195,8 @@ export default function FAQsPage() {
     return (
       <div className="p-4 sm:p-6">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple mx-auto"></div>
-          <p className="mt-2 text-brand-mid-gray">Loading FAQs...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+          <p className="mt-2 text-ink-500">Loading FAQs...</p>
         </div>
       </div>
     )
@@ -209,8 +209,8 @@ export default function FAQsPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-medium text-brand-dark mb-2">Error Loading FAQs</h3>
-            <p className="text-brand-mid-gray mb-4">{error}</p>
+            <h3 className="text-lg font-medium text-ink-900 mb-2">Error Loading FAQs</h3>
+            <p className="text-ink-500 mb-4">{error}</p>
             <Button onClick={loadFAQs}>Try Again</Button>
           </CardContent>
         </Card>
@@ -229,8 +229,8 @@ export default function FAQsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-brand-dark">Frequently Asked Questions</h1>
-            <p className="text-sm sm:text-base text-brand-mid-gray">Manage common questions and improve guest experience</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-ink-900">Frequently Asked Questions</h1>
+            <p className="text-sm sm:text-base text-ink-500">Manage common questions and improve guest experience</p>
           </div>
           <Button 
             className="sm:w-auto flex-shrink-0"
@@ -270,7 +270,7 @@ export default function FAQsPage() {
                     "ml-1 sm:ml-2 text-xs pointer-events-none",
                     selectedFilter === filterOption.key 
                       ? "bg-white/20 text-white" 
-                      : "bg-brand-mid-gray/10 text-brand-mid-gray"
+                      : "bg-ink-500/10 text-ink-500"
                   )}
                 >
                   {filterOption.count}
@@ -281,7 +281,7 @@ export default function FAQsPage() {
 
           {/* Search */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Search className="h-4 w-4 text-brand-mid-gray flex-shrink-0" />
+            <Search className="h-4 w-4 text-ink-500 flex-shrink-0" />
             <Input 
               placeholder="Search FAQs..."
               value={searchTerm}
@@ -296,9 +296,9 @@ export default function FAQsPage() {
           {faqs.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <HelpCircle className="mx-auto h-12 w-12 text-brand-mid-gray mb-4" />
-                <h3 className="text-lg font-medium text-brand-dark mb-2">No FAQs found</h3>
-                <p className="text-brand-mid-gray">
+                <HelpCircle className="mx-auto h-12 w-12 text-ink-500 mb-4" />
+                <h3 className="text-lg font-medium text-ink-900 mb-2">No FAQs found</h3>
+                <p className="text-ink-500">
                   {searchTerm ? `No results for "${searchTerm}"` : 'Add your first FAQ to help guests get quick answers.'}
                 </p>
               </CardContent>
@@ -306,14 +306,14 @@ export default function FAQsPage() {
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-brand-dark">
+                <h3 className="text-lg font-semibold text-ink-900">
                   {selectedFilter === 'all' ? 'Questions by Popularity' : `${
                     selectedFilter === 'llm' ? 'AI Generated' :
                     selectedFilter === 'host' ? 'Host Answered' :
                     'Questions Needing Answers'
                   } (${sortedFaqs.length})`}
                 </h3>
-                <div className="flex items-center gap-2 text-sm text-brand-mid-gray">
+                <div className="flex items-center gap-2 text-sm text-ink-500">
                   <TrendingUp className="h-4 w-4" />
                   Sorted by ask frequency
                 </div>
@@ -334,12 +334,12 @@ export default function FAQsPage() {
                           {/* FAQ Header */}
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                             <div className="flex items-start gap-3 flex-1 min-w-0">
-                              <div className="flex items-center justify-center w-6 h-6 bg-brand-mid-gray/10 rounded-full text-xs font-medium text-brand-mid-gray flex-shrink-0">
+                              <div className="flex items-center justify-center w-6 h-6 bg-ink-500/10 rounded-full text-xs font-medium text-ink-500 flex-shrink-0">
                                 {index + 1}
                               </div>
                               
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-brand-dark mb-2 break-words">{faq.question}</h4>
+                                <h4 className="font-semibold text-ink-900 mb-2 break-words">{faq.question}</h4>
                                 
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
                                   <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${typeInfo.color} w-fit`}>
@@ -347,7 +347,7 @@ export default function FAQsPage() {
                                     <span className="whitespace-nowrap">{typeInfo.label}</span>
                                   </div>
                                   
-                                  <div className="flex items-center gap-1 text-sm text-brand-mid-gray">
+                                  <div className="flex items-center gap-1 text-sm text-ink-500">
                                     <TrendingUp className="h-3 w-3 flex-shrink-0" />
                                     <span className="whitespace-nowrap">Asked {faq.ask_count || 0} times</span>
                                   </div>
@@ -359,7 +359,7 @@ export default function FAQsPage() {
                                   )}
                                 </div>
                                 
-                                <p className="text-xs text-brand-mid-gray mb-3 break-words">
+                                <p className="text-xs text-ink-500 mb-3 break-words">
                                   Last asked: {formatLastAsked(faq.last_asked)}
                                 </p>
                               </div>
@@ -404,7 +404,7 @@ export default function FAQsPage() {
                                         id={`answer-${faq.id}`}
                                         value={answerDraft}
                                         onChange={(e) => setAnswerDraft(e.target.value)}
-                                        className="w-full h-24 px-3 py-2 border rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 break-words"
+                                        className="w-full h-24 px-3 py-2 border rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 break-words"
                                         placeholder="Type your answer here..."
                                       />
                                     </div>
@@ -435,9 +435,9 @@ export default function FAQsPage() {
                               // Answered - Show current answer
                               <div className="space-y-2">
                                 <div className="p-3 bg-gray-50 border rounded-lg">
-                                  <p className="text-sm text-brand-dark break-words whitespace-pre-wrap">{faq.answer}</p>
+                                  <p className="text-sm text-ink-900 break-words whitespace-pre-wrap">{faq.answer}</p>
                                 </div>
-                                <p className="text-xs text-brand-mid-gray break-words">
+                                <p className="text-xs text-ink-500 break-words">
                                   {typeInfo.description}
                                 </p>
                               </div>
@@ -458,7 +458,7 @@ export default function FAQsPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
             <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-brand-dark">Add New FAQ</h2>
+                <h2 className="text-lg font-semibold text-ink-900">Add New FAQ</h2>
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -495,7 +495,7 @@ export default function FAQsPage() {
                     value={newFaq.answer}
                     onChange={(e) => setNewFaq({ ...newFaq, answer: e.target.value })}
                     placeholder="Enter the answer (leave blank if unanswered)..."
-                    className="mt-1 w-full h-24 px-3 py-2 border rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+                    className="mt-1 w-full h-24 px-3 py-2 border rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
                   />
                 </div>
                 

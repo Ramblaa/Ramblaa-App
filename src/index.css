@@ -2,50 +2,138 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================
+   Ramblaa Brand Design System
+   ============================ */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary: 220.9 39.3% 11%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 224 71.4% 4.1%;
-    --radius: 0.5rem;
+    /* ========================
+       Primary Blue Palette (#2563eb based)
+       ======================== */
+    --brand-50: #eff6ff;
+    --brand-100: #dbeafe;
+    --brand-200: #bfdbfe;
+    --brand-300: #93c5fd;
+    --brand-400: #60a5fa;
+    --brand-500: #3b82f6;
+    --brand-600: #2563eb;
+    --brand-700: #1d4ed8;
+    --brand-800: #1e40af;
+    --brand-900: #1e3a8a;
+
+    /* ========================
+       Ink Palette (Charcoal Neutrals)
+       ======================== */
+    --ink-0: #FAFAF8;
+    --ink-50: #F5F5F3;
+    --ink-100: #EBEBEA;
+    --ink-200: #DCDCDA;
+    --ink-300: #B8B8B5;
+    --ink-400: #8F8F8C;
+    --ink-500: #6B6B68;
+    --ink-600: #525250;
+    --ink-700: #3D3D3B;
+    --ink-800: #292927;
+    --ink-900: #1A1A18;
+
+    /* ========================
+       Sand Palette (Warm Accent)
+       ======================== */
+    --sand-100: #FAF6F0;
+    --sand-200: #F0E8DA;
+    --sand-300: #E0D4C0;
+    --sand-400: #C4B49A;
+    --sand-500: #A89878;
+
+    /* ========================
+       Shadows
+       ======================== */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* ========================
+       Font Sizes
+       ======================== */
+    --fs-12: 0.75rem;
+    --fs-14: 0.875rem;
+    --fs-16: 1rem;
+    --fs-18: 1.125rem;
+    --fs-20: 1.25rem;
+    --fs-24: 1.5rem;
+
+    /* ========================
+       Radius (soft, rounded feel per brand guidelines)
+       ======================== */
+    --radius: 0.75rem;
+
+    /* ========================
+       shadcn/ui Semantic Token Mapping
+       ======================== */
+    --background: var(--ink-0);
+    --foreground: var(--ink-900);
+
+    --muted: var(--ink-100);
+    --muted-foreground: var(--ink-500);
+
+    --popover: #ffffff;
+    --popover-foreground: var(--ink-900);
+
+    --card: #ffffff;
+    --card-foreground: var(--ink-900);
+
+    --border: var(--ink-200);
+    --input: var(--ink-200);
+
+    /* Primary is now Blue */
+    --primary: #2563eb;
+    --primary-foreground: #ffffff;
+
+    --secondary: var(--ink-100);
+    --secondary-foreground: var(--ink-800);
+
+    --accent: var(--brand-100);
+    --accent-foreground: var(--brand-800);
+
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --ring: var(--brand-400);
   }
 
+  /* ========================
+     Dark Mode Token Mapping
+     ======================== */
   .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 210 20% 98%;
-    --primary-foreground: 220.9 39.3% 11%;
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
-    --accent: 215 27.9% 16.9%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 216 12.2% 83.9%;
+    --background: var(--ink-900);
+    --foreground: var(--ink-50);
+
+    --muted: var(--ink-800);
+    --muted-foreground: var(--ink-400);
+
+    --popover: var(--ink-800);
+    --popover-foreground: var(--ink-50);
+
+    --card: var(--ink-800);
+    --card-foreground: var(--ink-50);
+
+    --border: var(--ink-700);
+    --input: var(--ink-700);
+
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+
+    --secondary: var(--ink-700);
+    --secondary-foreground: var(--ink-100);
+
+    --accent: var(--brand-800);
+    --accent-foreground: var(--brand-100);
+
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+
+    --ring: var(--brand-500);
   }
 }
 
@@ -53,27 +141,42 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
   }
-  
+
+  /* Smooth focus transitions */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
   /* Mobile safe areas for iPhone notches and home indicators */
   @supports (padding: max(0px)) {
     .safe-area-top {
       padding-top: max(1rem, env(safe-area-inset-top));
     }
-    
+
     .safe-area-bottom {
       padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
-    
+
     .safe-area-inset-bottom {
       padding-bottom: env(safe-area-inset-bottom);
     }
   }
-  
+
   /* Ensure proper touch scrolling on iOS */
   .mobile-scroll {
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ========================
+   Utility Classes
+   ======================== */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }

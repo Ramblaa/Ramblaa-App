@@ -115,7 +115,7 @@ const ScenarioSetupModal = ({ isOpen, onClose, onCreateSession }) => {
           >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <CardTitle className="text-xl font-bold text-brand-dark">
+                <CardTitle className="text-xl font-bold text-ink-900">
                   Create Sandbox Scenario
                 </CardTitle>
                 <Button
@@ -141,7 +141,7 @@ const ScenarioSetupModal = ({ isOpen, onClose, onCreateSession }) => {
                       value={formData.property_id}
                       onChange={(e) => handleInputChange('property_id', e.target.value)}
                       required
-                      className="w-full h-10 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+                      className="w-full h-10 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
                     >
                       <option value="">Select a property...</option>
                       {properties.map(property => (
@@ -154,10 +154,10 @@ const ScenarioSetupModal = ({ isOpen, onClose, onCreateSession }) => {
 
                   {/* Property Details */}
                   {selectedProperty && (
-                    <div className="p-3 bg-brand-vanilla/20 rounded-lg border border-brand-vanilla">
-                      <h4 className="font-medium text-brand-dark mb-1">{selectedProperty.name}</h4>
-                      <p className="text-sm text-brand-mid-gray">{selectedProperty.address}</p>
-                      <div className="flex gap-4 mt-2 text-sm text-brand-mid-gray">
+                    <div className="p-3 bg-brand-100/20 rounded-lg border border-brand-200">
+                      <h4 className="font-medium text-ink-900 mb-1">{selectedProperty.name}</h4>
+                      <p className="text-sm text-ink-500">{selectedProperty.address}</p>
+                      <div className="flex gap-4 mt-2 text-sm text-ink-500">
                         <span>Check-in: {selectedProperty.check_in_time}</span>
                         <span>Check-out: {selectedProperty.check_out_time}</span>
                       </div>
@@ -191,7 +191,7 @@ const ScenarioSetupModal = ({ isOpen, onClose, onCreateSession }) => {
                         onChange={(e) => handleInputChange('guest_phone', e.target.value)}
                         placeholder="e.g., +1 555 123 4567"
                       />
-                      <p className="text-xs text-brand-mid-gray">
+                      <p className="text-xs text-ink-500">
                         Optional - will use a demo number if not provided
                       </p>
                     </div>
@@ -237,9 +237,9 @@ const ScenarioSetupModal = ({ isOpen, onClose, onCreateSession }) => {
                       onChange={(e) => handleInputChange('initial_context', e.target.value)}
                       placeholder="e.g., Hi! I just arrived and can't find the key code. Could you help me get into the property?"
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 resize-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 resize-none"
                     />
-                    <p className="text-xs text-brand-mid-gray">
+                    <p className="text-xs text-ink-500">
                       Start the scenario with a specific guest message
                     </p>
                   </div>
