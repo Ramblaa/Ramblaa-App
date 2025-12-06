@@ -306,140 +306,8 @@ router.post('/cancel-all', async (req, res) => {
 });
 
 // ============================================================================
-// TASK DETAIL ROUTES - /:id must be LAST
+// RECURRING TASK ROUTES - Must be before /:id routes
 // ============================================================================
-
-/**
- * GET /api/tasks/:id
- * Get task details
- */
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const db = getDb();
-
-    const task = await db.prepare(`
-      SELECT t.*, 
-        p.name as property_name,
-        b.guest_name
-      FROM tasks t
-      LEFT JOIN properties p ON t.property_id = p.id
-      LEFT JOIN bookings b ON t.booking_id = b.id
-      WHERE t.id = ?
-    `).get(id);
-
-    if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    // Get related messages
-    const messages = await db.prepare(`
-      SELECT * FROM messages 
-      WHERE reference_task_ids LIKE ?
-      ORDER BY created_at ASC
-    `).all(`%${id}%`);
-
-    // Parse ongoing conversation
-    let conversation = [];
-    if (task.ongoing_conversation) {
-      try {
-        conversation = JSON.parse(task.ongoing_conversation);
-      } catch (e) {
-        conversation = task.ongoing_conversation.split('\n').filter(Boolean);
-      }
-    }
-
-    res.json({
-      id: task.id,
-      title: task.task_bucket || task.task_request_title,  // Show category name (e.g., "Fresh Towels")
-      type: getTaskType(task.task_bucket),
-      bucket: task.task_bucket,
-      property: task.property_name || 'Unknown',
-      propertyId: task.property_id,
-      assignee: task.staff_name || 'Unassigned',
-      assigneePhone: task.staff_phone,
-      status: formatStatus(task.status),
-      priority: getPriority(task),
-      description: task.guest_message,
-      guestMessage: task.guest_message,
-      guestPhone: task.phone,
-      guestName: task.guest_name,
-      actionHolder: task.action_holder,
-      actionHolderPhone: task.action_holder_phone,
-      missingRequirements: task.action_holder_missing_requirements,
-      staffRequirements: task.staff_requirements,
-      guestRequirements: task.guest_requirements,
-      hostEscalation: task.host_escalation,
-      aiResponse: task.ai_message_response,
-      conversation,
-      messages: messages.map(m => ({
-        id: m.id,
-        text: m.body,
-        sender: m.message_type === 'Inbound' ? 'guest' : 'host',
-        timestamp: m.created_at,
-      })),
-      createdAt: task.created_at,
-      updatedAt: task.updated_at,
-      scheduledAt: task.scheduled_at,
-      completedAt: task.completed_at,
-    });
-  } catch (error) {
-    console.error('[Tasks] Get error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * POST /api/tasks
- * Create a new task
- */
-router.post('/', async (req, res) => {
-  try {
-    const db = getDb();
-    const {
-      propertyId,
-      bookingId,
-      phone,
-      title,
-      description,
-      taskBucket,
-      staffId,
-      staffName,
-      staffPhone,
-    } = req.body;
-
-    if (!propertyId || !title) {
-      return res.status(400).json({ error: 'Missing required fields: propertyId, title' });
-    }
-
-    const id = uuidv4();
-
-    await db.prepare(`
-      INSERT INTO tasks (
-        id, property_id, booking_id, phone, task_request_title,
-        guest_message, task_bucket, staff_id, staff_name, staff_phone,
-        action_holder, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Staff', 'Waiting on Staff', CURRENT_TIMESTAMP)
-    `).run(
-      id,
-      propertyId,
-      bookingId || null,
-      phone || null,
-      title,
-      description || '',
-      taskBucket || 'Other',
-      staffId || null,
-      staffName || null,
-      staffPhone || null
-    );
-
-    const task = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
-    res.status(201).json(task);
-  } catch (error) {
-    console.error('[Tasks] Create error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 /**
  * Recurring tasks (consolidated in tasks table with is_recurring_template = true)
@@ -698,6 +566,142 @@ router.delete('/recurring/:id', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('[Tasks] Recurring delete error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// TASK DETAIL ROUTES - /:id must be LAST
+// ============================================================================
+
+/**
+ * GET /api/tasks/:id
+ * Get task details
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+
+    const task = await db.prepare(`
+      SELECT t.*, 
+        p.name as property_name,
+        b.guest_name
+      FROM tasks t
+      LEFT JOIN properties p ON t.property_id = p.id
+      LEFT JOIN bookings b ON t.booking_id = b.id
+      WHERE t.id = ?
+    `).get(id);
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Get related messages
+    const messages = await db.prepare(`
+      SELECT * FROM messages 
+      WHERE reference_task_ids LIKE ?
+      ORDER BY created_at ASC
+    `).all(`%${id}%`);
+
+    // Parse ongoing conversation
+    let conversation = [];
+    if (task.ongoing_conversation) {
+      try {
+        conversation = JSON.parse(task.ongoing_conversation);
+      } catch (e) {
+        conversation = task.ongoing_conversation.split('\n').filter(Boolean);
+      }
+    }
+
+    res.json({
+      id: task.id,
+      title: task.task_bucket || task.task_request_title,  // Show category name (e.g., "Fresh Towels")
+      type: getTaskType(task.task_bucket),
+      bucket: task.task_bucket,
+      property: task.property_name || 'Unknown',
+      propertyId: task.property_id,
+      assignee: task.staff_name || 'Unassigned',
+      assigneePhone: task.staff_phone,
+      status: formatStatus(task.status),
+      priority: getPriority(task),
+      description: task.guest_message,
+      guestMessage: task.guest_message,
+      guestPhone: task.phone,
+      guestName: task.guest_name,
+      actionHolder: task.action_holder,
+      actionHolderPhone: task.action_holder_phone,
+      missingRequirements: task.action_holder_missing_requirements,
+      staffRequirements: task.staff_requirements,
+      guestRequirements: task.guest_requirements,
+      hostEscalation: task.host_escalation,
+      aiResponse: task.ai_message_response,
+      conversation,
+      messages: messages.map(m => ({
+        id: m.id,
+        text: m.body,
+        sender: m.message_type === 'Inbound' ? 'guest' : 'host',
+        timestamp: m.created_at,
+      })),
+      createdAt: task.created_at,
+      updatedAt: task.updated_at,
+      scheduledAt: task.scheduled_at,
+      completedAt: task.completed_at,
+    });
+  } catch (error) {
+    console.error('[Tasks] Get error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/tasks
+ * Create a new task
+ */
+router.post('/', async (req, res) => {
+  try {
+    const db = getDb();
+    const {
+      propertyId,
+      bookingId,
+      phone,
+      title,
+      description,
+      taskBucket,
+      staffId,
+      staffName,
+      staffPhone,
+    } = req.body;
+
+    if (!propertyId || !title) {
+      return res.status(400).json({ error: 'Missing required fields: propertyId, title' });
+    }
+
+    const id = uuidv4();
+
+    await db.prepare(`
+      INSERT INTO tasks (
+        id, property_id, booking_id, phone, task_request_title,
+        guest_message, task_bucket, staff_id, staff_name, staff_phone,
+        action_holder, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Staff', 'Waiting on Staff', CURRENT_TIMESTAMP)
+    `).run(
+      id,
+      propertyId,
+      bookingId || null,
+      phone || null,
+      title,
+      description || '',
+      taskBucket || 'Other',
+      staffId || null,
+      staffName || null,
+      staffPhone || null
+    );
+
+    const task = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    res.status(201).json(task);
+  } catch (error) {
+    console.error('[Tasks] Create error:', error);
     res.status(500).json({ error: error.message });
   }
 });
