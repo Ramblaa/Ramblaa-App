@@ -32,7 +32,6 @@ async function migrate() {
       { name: 'next_run_at', type: 'TIMESTAMP' },
       { name: 'last_run_at', type: 'TIMESTAMP' },
       { name: 'parent_task_id', type: 'TEXT' },
-      { name: 'scheduled_for', type: 'TIMESTAMP' },  // When task is planned to happen
     ];
     
     for (const col of columnsToAdd) {

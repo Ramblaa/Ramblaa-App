@@ -60,8 +60,6 @@ export default function TasksPage() {
     staffPhone: '',
     bookingId: '',
     phone: '',
-    scheduledForDate: '',  // When task is planned to happen
-    scheduledForTime: '',
     repeatType: 'NONE', // NONE | DAILY | WEEKLY | MONTHLY | INTERVAL
     intervalDays: 90,
     startDate: today,
@@ -118,13 +116,6 @@ export default function TasksPage() {
     }
     setSaving(true)
     try {
-      // Build scheduledFor timestamp if date is provided
-      let scheduledFor = undefined
-      if (newTask.scheduledForDate) {
-        const time = newTask.scheduledForTime || '09:00'
-        scheduledFor = `${newTask.scheduledForDate}T${time}:00`
-      }
-      
       if (newTask.repeatType === 'NONE') {
         await tasksApi.createTask({
           propertyId: newTask.propertyId,
@@ -136,7 +127,6 @@ export default function TasksPage() {
           staffId: newTask.staffId,
           staffName: newTask.staffName || undefined,
           staffPhone: newTask.staffPhone || undefined,
-          scheduledFor,
         })
       } else {
         await tasksApi.createRecurringTask({
@@ -159,7 +149,7 @@ export default function TasksPage() {
         })
       }
       setShowAddModal(false)
-      setNewTask(prev => ({ ...prev, title: '', description: '', taskBucket: '', scheduledForDate: '', scheduledForTime: '', repeatType: 'NONE' }))
+      setNewTask(prev => ({ ...prev, title: '', description: '', taskBucket: '', repeatType: 'NONE' }))
       loadData()
     } catch (err) {
       console.error('Add task failed', err)
@@ -460,12 +450,6 @@ export default function TasksPage() {
                           <User className="h-4 w-4" />
                           {task.assignee}
                         </span>
-                        {task.scheduledForDate && (
-                          <span className="flex items-center gap-1 text-brand-600 font-medium">
-                            <Calendar className="h-4 w-4" />
-                            Scheduled: {task.scheduledForDate}{task.scheduledForTime ? ` at ${task.scheduledForTime}` : ''}
-                          </span>
-                        )}
                       </div>
                     </div>
                     
@@ -756,32 +740,6 @@ export default function TasksPage() {
                     onChange={(e) => setNewTask(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="+1..."
                   />
-                </div>
-              </div>
-
-              {/* Scheduled For Section */}
-              <div className="border rounded-lg p-4 space-y-3">
-                <div>
-                  <p className="font-semibold text-ink-900">Scheduled For (optional)</p>
-                  <p className="text-sm text-ink-500">When should this task be completed?</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-ink-800">Date</label>
-                    <Input
-                      type="date"
-                      value={newTask.scheduledForDate}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, scheduledForDate: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-ink-800">Time</label>
-                    <Input
-                      type="time"
-                      value={newTask.scheduledForTime}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, scheduledForTime: e.target.value }))}
-                    />
-                  </div>
                 </div>
               </div>
 

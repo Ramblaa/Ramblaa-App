@@ -66,7 +66,6 @@ router.get('/', async (req, res) => {
     const formatted = tasks.map(task => {
       // Handle dates - PostgreSQL returns Date objects, not strings
       const createdAt = task.created_at ? new Date(task.created_at).toISOString() : null;
-      const scheduledFor = task.scheduled_for ? new Date(task.scheduled_for).toISOString() : null;
       
       return {
         id: task.id,
@@ -81,9 +80,6 @@ router.get('/', async (req, res) => {
         isFromRecurring: !!task.parent_task_id,
         createdDate: createdAt?.split('T')[0],
         createdTime: createdAt?.split('T')[1]?.slice(0, 5),
-        scheduledFor,
-        scheduledForDate: scheduledFor?.split('T')[0],
-        scheduledForTime: scheduledFor?.split('T')[1]?.slice(0, 5),
         status: formatStatus(task.status),
         priority: getPriority(task),
         description: task.guest_message || '',
@@ -684,7 +680,6 @@ router.post('/', async (req, res) => {
       staffId,
       staffName,
       staffPhone,
-      scheduledFor,  // When task is planned to happen (ISO timestamp)
     } = req.body;
 
     if (!propertyId || !title) {
@@ -697,8 +692,8 @@ router.post('/', async (req, res) => {
       INSERT INTO tasks (
         id, property_id, booking_id, phone, task_request_title,
         guest_message, task_bucket, staff_id, staff_name, staff_phone,
-        scheduled_for, action_holder, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Staff', 'Waiting on Staff', CURRENT_TIMESTAMP)
+        action_holder, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Staff', 'Waiting on Staff', CURRENT_TIMESTAMP)
     `).run(
       id,
       propertyId,
@@ -709,8 +704,7 @@ router.post('/', async (req, res) => {
       taskBucket || 'Other',
       staffId || null,
       staffName || null,
-      staffPhone || null,
-      scheduledFor || null
+      staffPhone || null
     );
 
     const task = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
