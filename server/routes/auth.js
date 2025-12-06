@@ -119,7 +119,7 @@ router.post('/login', [
 
 // POST /api/auth/register (Admin only)
 router.post('/register', authenticateToken, requireAdmin, [
-  body('email').isEmail().toLowerCase(),
+  body('email').isEmail().normalizeEmail(),
   body('firstName').trim().isLength({ min: 1 }),
   body('lastName').trim().isLength({ min: 1 }),
   body('role').isIn(['admin', 'user']),
@@ -170,7 +170,7 @@ router.post('/register', authenticateToken, requireAdmin, [
 
 // POST /api/auth/signup (Public signup)
 router.post('/signup', [
-  body('email').isEmail().toLowerCase(),
+  body('email').isEmail().normalizeEmail(),
   body('firstName').trim().isLength({ min: 1 }).withMessage('First name is required'),
   body('lastName').trim().isLength({ min: 1 }).withMessage('Last name is required'),
   ...passwordValidation
