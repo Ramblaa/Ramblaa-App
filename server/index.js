@@ -18,6 +18,7 @@ import scheduledRoutes from './routes/scheduled.js';
 // Import scheduled message services
 import { processPendingScheduledMessages } from './services/scheduledMessageProcessor.js';
 import { evaluateDateBasedRules } from './services/scheduleService.js';
+import { processRecurringTasks } from './services/recurringTaskProcessor.js';
 
 const app = express();
 
@@ -183,6 +184,18 @@ async function start() {
       }
     });
     console.log('[Cron] Daily rules evaluator registered (midnight)');
+
+    // Process recurring tasks every 10 minutes
+    cron.schedule('*/10 * * * *', async () => {
+      console.log('[Cron] Processing recurring tasks...');
+      try {
+        const result = await processRecurringTasks();
+        console.log('[Cron] Recurring tasks result:', result);
+      } catch (error) {
+        console.error('[Cron] Error processing recurring tasks:', error.message);
+      }
+    });
+    console.log('[Cron] Recurring task processor registered (every 10 minutes)');
 
     // Railway provides PORT env var - use it directly
     const port = process.env.PORT || 3001;

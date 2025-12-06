@@ -21,13 +21,35 @@ async function apiFetch(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config);
-    
+
+    // Short-circuit no-content responses
+    if (response.status === 204) return {};
+
+    const text = await response.text();
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      // Try to parse error JSON; otherwise surface status text/body
+      let errorMsg = response.statusText;
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          errorMsg = parsed.error || parsed.message || errorMsg;
+        } catch {
+          errorMsg = text || errorMsg;
+        }
+      }
+      throw new Error(errorMsg || `HTTP ${response.status}`);
     }
 
-    return response.json();
+    // No body
+    if (!text) return {};
+
+    // Parse JSON body
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error(`Invalid JSON response: ${e.message}`);
+    }
   } catch (error) {
     console.error(`[API] ${options.method || 'GET'} ${endpoint} failed:`, error.message);
     throw error;
@@ -122,6 +144,33 @@ export const tasksApi = {
   async completeTask(taskId) {
     return apiFetch(`/tasks/${taskId}/complete`, {
       method: 'POST',
+    });
+  },
+
+  /**
+   * Recurring tasks
+   */
+  async getRecurringTasks() {
+    return apiFetch('/tasks/recurring');
+  },
+
+  async createRecurringTask(data) {
+    return apiFetch('/tasks/recurring', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateRecurringTask(id, data) {
+    return apiFetch(`/tasks/recurring/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteRecurringTask(id) {
+    return apiFetch(`/tasks/recurring/${id}`, {
+      method: 'DELETE',
     });
   },
 

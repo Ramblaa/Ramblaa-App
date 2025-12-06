@@ -14,6 +14,7 @@ import {
   evaluateTaskStatus,
   archiveCompletedTasks,
 } from '../services/taskManager.js';
+import { computeNextRunAt } from '../services/recurringTaskProcessor.js';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ router.get('/', async (req, res) => {
       FROM tasks t
       LEFT JOIN properties p ON t.property_id = p.id
       LEFT JOIN bookings b ON t.booking_id = b.id
-      WHERE 1=1
+      WHERE (t.is_recurring_template IS NULL OR t.is_recurring_template = false)
     `;
     const params = [];
 
@@ -63,23 +64,26 @@ router.get('/', async (req, res) => {
 
     // Format response
     const formatted = tasks.map(task => {
-      // Handle date - PostgreSQL returns Date objects, not strings
+      // Handle dates - PostgreSQL returns Date objects, not strings
       const createdAt = task.created_at ? new Date(task.created_at).toISOString() : null;
+      
       return {
         id: task.id,
-        title: task.task_request_title || task.task_bucket || 'Task',  // Main title: "Check-in inquiry"
-        subtitle: task.task_bucket || '',  // Subtitle: "Other"
+        title: task.task_request_title || task.task_bucket || 'Task',
+        subtitle: task.task_bucket || '',
         type: getTaskType(task.task_bucket),
         property: task.property_name || 'Unknown',
         propertyId: task.property_id,
         assignee: task.staff_name || 'Unassigned',
         assigneePhone: task.staff_phone,
-        dueDate: createdAt?.split('T')[0],
-        dueTime: createdAt?.split('T')[1]?.slice(0, 5),
+        parentTaskId: task.parent_task_id,
+        isFromRecurring: !!task.parent_task_id,
+        createdDate: createdAt?.split('T')[0],
+        createdTime: createdAt?.split('T')[1]?.slice(0, 5),
         status: formatStatus(task.status),
         priority: getPriority(task),
         description: task.guest_message || '',
-        threadCount: 1, // Would need to count from messages
+        threadCount: 1,
         actionHolder: task.action_holder,
         guestPhone: task.phone,
         guestName: task.guest_name,
@@ -298,6 +302,279 @@ router.post('/cancel-all', async (req, res) => {
     });
   } catch (error) {
     console.error('[Tasks] Cancel-all error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// RECURRING TASK ROUTES - Must be before /:id routes
+// ============================================================================
+
+/**
+ * Recurring tasks (consolidated in tasks table with is_recurring_template = true)
+ */
+router.get('/recurring', async (_req, res) => {
+  try {
+    const db = getDb();
+    const templates = await db.prepare(`
+      SELECT t.*, p.name as property_name
+      FROM tasks t
+      LEFT JOIN properties p ON t.property_id = p.id
+      WHERE t.is_recurring_template = true
+      ORDER BY t.created_at DESC
+    `).all();
+    
+    res.json(templates.map(t => {
+      // Convert Date objects to ISO strings for safe parsing
+      const scheduledAt = t.scheduled_at ? new Date(t.scheduled_at).toISOString() : null;
+      const nextRunAt = t.next_run_at ? new Date(t.next_run_at).toISOString() : null;
+      const lastRunAt = t.last_run_at ? new Date(t.last_run_at).toISOString() : null;
+      const createdAt = t.created_at ? new Date(t.created_at).toISOString() : null;
+      
+      return {
+        id: t.id,
+        propertyId: t.property_id,
+        propertyName: t.property_name,
+        title: t.task_request_title || t.task_bucket || 'Task',
+        description: t.guest_message || '',
+        taskBucket: t.task_bucket,
+        staffId: t.staff_id,
+        staffName: t.staff_name,
+        staffPhone: t.staff_phone,
+        repeatType: t.repeat_type || 'NONE',
+        intervalDays: t.interval_days || 1,
+        startDate: scheduledAt?.split('T')[0],
+        endDate: t.recurrence_end_date,
+        timeOfDay: t.time_of_day || '09:00',
+        maxOccurrences: t.max_occurrences,
+        occurrencesCreated: t.occurrences_created || 0,
+        nextRunAt,
+        lastRunAt,
+        isActive: t.status !== 'Cancelled',
+        createdAt,
+      };
+    }));
+  } catch (error) {
+    console.error('[Tasks] Recurring list error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/recurring', async (req, res) => {
+  try {
+    const db = getDb();
+    const {
+      propertyId,
+      bookingId,
+      phone,
+      title,
+      description,
+      taskBucket,
+      staffId,
+      staffName,
+      staffPhone,
+      repeatType,
+      intervalDays,
+      startDate,
+      endDate,
+      timeOfDay,
+      maxOccurrences,
+      createFirst = true,
+    } = req.body;
+
+    if (!propertyId || !title || !repeatType || !startDate) {
+      return res.status(400).json({ error: 'Missing required fields: propertyId, title, repeatType, startDate' });
+    }
+
+    const id = uuidv4();
+    const nextRunAt = computeNextRunAt(startDate, timeOfDay || '09:00', repeatType, intervalDays || 1);
+
+    // Create template task with recurring columns
+    await db.prepare(`
+      INSERT INTO tasks (
+        id, property_id, booking_id, phone, task_request_title, guest_message, task_bucket,
+        staff_id, staff_name, staff_phone, action_holder, status,
+        is_recurring_template, repeat_type, interval_days, scheduled_at, recurrence_end_date,
+        time_of_day, max_occurrences, occurrences_created, next_run_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Staff', 'Active', true, ?, ?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP)
+    `).run(
+      id,
+      propertyId,
+      bookingId || null,
+      phone || null,
+      title,
+      description || '',
+      taskBucket || 'Other',
+      staffId || null,
+      staffName || null,
+      staffPhone || null,
+      repeatType,
+      intervalDays || 1,
+      startDate,
+      endDate || null,
+      timeOfDay || '09:00',
+      maxOccurrences || null,
+      nextRunAt.toISOString()
+    );
+
+    // Optionally create the first occurrence immediately if startDate is now/past
+    if (createFirst && nextRunAt <= new Date()) {
+      await createTaskInstanceFromTemplate(db, {
+        id,
+        property_id: propertyId,
+        booking_id: bookingId,
+        phone,
+        task_request_title: title,
+        guest_message: description,
+        task_bucket: taskBucket,
+        staff_id: staffId,
+        staff_name: staffName,
+        staff_phone: staffPhone,
+      });
+
+      const nextNext = computeNextRunAt(
+        startDate,
+        timeOfDay || '09:00',
+        repeatType,
+        intervalDays || 1,
+        new Date(nextRunAt.getTime() + 1000)
+      );
+
+      await db.prepare(`
+        UPDATE tasks
+        SET occurrences_created = COALESCE(occurrences_created, 0) + 1,
+            last_run_at = ?,
+            next_run_at = ?
+        WHERE id = ?
+      `).run(
+        new Date().toISOString(),
+        nextNext.toISOString(),
+        id
+      );
+    }
+
+    const created = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    res.status(201).json({
+      id: created.id,
+      title: created.task_request_title,
+      repeatType: created.repeat_type,
+      nextRunAt: created.next_run_at,
+      isRecurringTemplate: created.is_recurring_template,
+    });
+  } catch (error) {
+    console.error('[Tasks] Recurring create error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper to create a task instance from a recurring template
+async function createTaskInstanceFromTemplate(db, template) {
+  const instanceId = uuidv4();
+  await db.prepare(`
+    INSERT INTO tasks (
+      id, property_id, booking_id, phone, task_request_title, guest_message, task_bucket,
+      staff_id, staff_name, staff_phone, action_holder, status,
+      is_recurring_template, parent_task_id, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Staff', 'Waiting on Staff', false, ?, CURRENT_TIMESTAMP)
+  `).run(
+    instanceId,
+    template.property_id,
+    template.booking_id || null,
+    template.phone || null,
+    template.task_request_title,
+    template.guest_message || '',
+    template.task_bucket || 'Other',
+    template.staff_id || null,
+    template.staff_name || null,
+    template.staff_phone || null,
+    template.id  // parent_task_id
+  );
+  return instanceId;
+}
+
+router.patch('/recurring/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const db = getDb();
+
+    const existing = await db.prepare('SELECT * FROM tasks WHERE id = ? AND is_recurring_template = true').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Recurring task template not found' });
+    }
+
+    const fields = [];
+    const params = [];
+
+    // Map camelCase to snake_case for DB
+    const fieldMap = {
+      title: 'task_request_title',
+      description: 'guest_message',
+      taskBucket: 'task_bucket',
+      staffId: 'staff_id',
+      staffName: 'staff_name',
+      staffPhone: 'staff_phone',
+      repeatType: 'repeat_type',
+      intervalDays: 'interval_days',
+      startDate: 'scheduled_at',
+      endDate: 'recurrence_end_date',
+      timeOfDay: 'time_of_day',
+      maxOccurrences: 'max_occurrences',
+      nextRunAt: 'next_run_at',
+      isActive: null, // handled separately
+    };
+
+    Object.entries(fieldMap).forEach(([camel, snake]) => {
+      if (updates[camel] !== undefined && snake) {
+        fields.push(`${snake} = ?`);
+        params.push(updates[camel]);
+      }
+    });
+
+    // Handle isActive as status
+    if (updates.isActive !== undefined) {
+      fields.push('status = ?');
+      params.push(updates.isActive ? 'Active' : 'Cancelled');
+    }
+
+    if (fields.length === 0) {
+      return res.json({ id: existing.id, message: 'No changes' });
+    }
+
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    const sql = `UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`;
+    params.push(id);
+    await db.prepare(sql).run(...params);
+
+    const updated = await db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    res.json({
+      id: updated.id,
+      title: updated.task_request_title,
+      repeatType: updated.repeat_type,
+      isActive: updated.status !== 'Cancelled',
+    });
+  } catch (error) {
+    console.error('[Tasks] Recurring update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/recurring/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+    
+    // Verify it's a template
+    const existing = await db.prepare('SELECT * FROM tasks WHERE id = ? AND is_recurring_template = true').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Recurring task template not found' });
+    }
+    
+    // Delete the template (instances remain with parent_task_id reference)
+    await db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Tasks] Recurring delete error:', error);
     res.status(500).json({ error: error.message });
   }
 });
