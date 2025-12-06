@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Calendar, Clock, MapPin, User, Plus, Wrench, Brush, Search, Package, MessageCircle, Check, Trash2, Loader2, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, MapPin, User, Plus, Wrench, Brush, Search, Package, MessageCircle, Check, Trash2, Loader2, AlertCircle, Repeat, ExternalLink } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -43,6 +43,8 @@ export default function TasksPage() {
   const [error, setError] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [recurringTemplates, setRecurringTemplates] = useState([])
+  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'recurring'
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const [newTask, setNewTask] = useState({
@@ -74,13 +76,15 @@ export default function TasksPage() {
       setLoading(true)
       setError(null)
       
-      const [tasksData, propertiesData] = await Promise.all([
+      const [tasksData, propertiesData, recurringData] = await Promise.all([
         tasksApi.getTasks({ limit: 100 }),
         propertiesApi.getProperties({ limit: 100 }),
+        tasksApi.getRecurringTasks().catch(() => []),
       ])
       
       setTasks(tasksData)
       setProperties(propertiesData)
+      setRecurringTemplates(recurringData || [])
       if (!newTask.propertyId && propertiesData?.length) {
         const firstId = propertiesData[0].id
         setNewTask(prev => ({ ...prev, propertyId: firstId }))
@@ -245,6 +249,35 @@ export default function TasksPage() {
         </Button>
       </div>
 
+      {/* Tabs: Tasks vs Recurring Templates */}
+      <div className="flex gap-2 border-b border-ink-200">
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+            activeTab === 'tasks'
+              ? "border-brand-600 text-brand-600"
+              : "border-transparent text-ink-500 hover:text-ink-900"
+          )}
+        >
+          Tasks
+          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-ink-100 text-ink-600">{tasks.length}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('recurring')}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1",
+            activeTab === 'recurring'
+              ? "border-brand-600 text-brand-600"
+              : "border-transparent text-ink-500 hover:text-ink-900"
+          )}
+        >
+          <Repeat className="h-4 w-4" />
+          Recurring Templates
+          <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-ink-100 text-ink-600">{recurringTemplates.length}</span>
+        </button>
+      </div>
+
       {error && (
         <div className="flex items-center gap-2 p-4 bg-red-50 text-red-600 rounded-lg">
           <AlertCircle className="h-5 w-5" />
@@ -253,6 +286,8 @@ export default function TasksPage() {
         </div>
       )}
 
+      {activeTab === 'tasks' && (
+      <>
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Status Filters */}
@@ -383,11 +418,12 @@ export default function TasksPage() {
                         <Badge variant={priorityColors[task.priority] || 'secondary'}>
                           {task.priority} priority
                         </Badge>
-                    {task.recurringTaskId && (
-                      <Badge variant="secondary" className="bg-brand-100 text-brand-700">
-                        Recurring
-                      </Badge>
-                    )}
+                        {task.recurringTaskId && (
+                          <Badge variant="info" className="flex items-center gap-1">
+                            <Repeat className="h-3 w-3" />
+                            Recurring
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="flex gap-2">
@@ -426,6 +462,73 @@ export default function TasksPage() {
           <p className="text-ink-500">
             {searchTerm ? `No results for "${searchTerm}"` : 'Try adjusting your filters or create a new task.'}
           </p>
+        </div>
+      )}
+      </>
+      )}
+
+      {activeTab === 'recurring' && (
+        <div className="space-y-4">
+          {recurringTemplates.length === 0 ? (
+            <div className="text-center py-12">
+              <Repeat className="mx-auto h-12 w-12 text-ink-400 mb-4" />
+              <h3 className="text-lg font-medium text-ink-900 mb-2">No recurring task templates</h3>
+              <p className="text-ink-500 mb-4">Create a recurring task to have it repeat automatically.</p>
+              <Button onClick={() => setShowAddModal(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Recurring Task
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {recurringTemplates.map((template) => (
+                <Card key={template.id} className="hover:shadow-md transition-shadow">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Repeat className="h-5 w-5 text-brand-600" />
+                          <h3 className="font-semibold text-ink-900">{template.title}</h3>
+                        </div>
+                        <p className="text-sm text-ink-500">{template.description}</p>
+                        <div className="flex flex-wrap gap-3 text-sm text-ink-500">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {template.repeat_type === 'DAILY' && 'Every day'}
+                            {template.repeat_type === 'WEEKLY' && 'Every week'}
+                            {template.repeat_type === 'MONTHLY' && 'Every month'}
+                            {template.repeat_type === 'INTERVAL' && `Every ${template.interval_days} days`}
+                          </span>
+                          {template.time_of_day && (
+                            <span>at {template.time_of_day}</span>
+                          )}
+                          {template.staff_name && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-4 w-4" />
+                              {template.staff_name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:items-end gap-2">
+                        <div className="flex gap-2">
+                          <Badge variant={template.is_active ? 'success' : 'secondary'}>
+                            {template.is_active ? 'Active' : 'Paused'}
+                          </Badge>
+                          <Badge variant="outline">
+                            {template.occurrences_created || 0} created
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-ink-400">
+                          Next: {template.next_run_at ? format(new Date(template.next_run_at), 'MMM d, yyyy') : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
