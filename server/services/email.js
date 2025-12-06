@@ -62,7 +62,8 @@ async function sendEmail({ to, subject, text, html }) {
  * Send email verification email
  */
 export async function sendVerificationEmail(email, token, firstName) {
-  const verificationUrl = `${config.email.frontendUrl}/verify-email?token=${token}`;
+  const baseUrl = config.email.frontendUrl.replace(/\/+$/, ''); // Remove trailing slashes
+  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
 
   const subject = 'Verify your Ramblaa account';
   const text = `Hi ${firstName},
@@ -105,7 +106,8 @@ The Ramblaa Team`;
  * Send password reset email
  */
 export async function sendPasswordResetEmail(email, token, firstName) {
-  const resetUrl = `${config.email.frontendUrl}/reset-password?token=${token}`;
+  const baseUrl = config.email.frontendUrl.replace(/\/+$/, ''); // Remove trailing slashes
+  const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
   const subject = 'Reset your Ramblaa password';
   const text = `Hi ${firstName},
